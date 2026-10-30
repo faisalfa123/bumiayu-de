@@ -11,8 +11,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// CategoryFilterList holds all navigation categories
+var CategoryFilterList = []string{
+	"Semua",
+	"Foto & Cloud",
+	"Media",
+	"VPN & Jaringan",
+	"Web & Server",
+	"Database",
+	"Monitoring & Alat",
+}
+
 // RenderDashboard renders the All-in-One Desktop Launcher with live wallpaper art & direct app actions
-func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, selectedApp int, dialog AppDialogState, wm WMMode, wpType wallpaper.WallpaperType, wpPreset wallpaper.PresetScene, st styles.ThemeStyles, lang i18n.Language, width, height int) string {
+func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, selectedApp int, activeCategory int, dialog AppDialogState, wm WMMode, wpType wallpaper.WallpaperType, wpPreset wallpaper.PresetScene, st styles.ThemeStyles, lang i18n.Language, width, height int) string {
 	contentWidth := width - 6
 	if contentWidth < 50 {
 		contentWidth = 50
@@ -44,15 +55,46 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 			deviceType, distro, info.Hostname, info.TemperatureC, info.MemUsedMB, info.MemTotalMB, ramBar, healthBadge),
 	)
 
+	// Category Filter Pill Bar
+	var filterPills []string
+	for idx, cat := range CategoryFilterList {
+		if idx == activeCategory {
+			filterPills = append(filterPills, st.ButtonActive.Render(fmt.Sprintf("[%s]", cat)))
+		} else {
+			filterPills = append(filterPills, st.ButtonNormal.Render(fmt.Sprintf(" %s ", cat)))
+		}
+	}
+	filterBar := lipgloss.JoinHorizontal(lipgloss.Center, filterPills...)
+	filterContainer := st.Card.Width(contentWidth).Render(
+		lipgloss.JoinVertical(lipgloss.Left,
+			st.Title.Render("📂 Filter Kategori [Tekan Tab / Shift+Tab]:"),
+			filterBar,
+		),
+	)
+
+	// Filter catalog based on active category
+	type CatalogEntry struct {
+		OriginalIndex int
+		Item          system.AppCatalogItem
+	}
+	var filteredCatalog []CatalogEntry
+	selectedCatName := CategoryFilterList[activeCategory]
+	for i, app := range catalog {
+		if activeCategory == 0 || app.Category == selectedCatName {
+			filteredCatalog = append(filteredCatalog, CatalogEntry{OriginalIndex: i, Item: app})
+		}
+	}
+
 	// App List Panel (With Category Badges)
 	var listItems []string
-	for i, app := range catalog {
+	for i, entry := range filteredCatalog {
+		app := entry.Item
 		badge := st.Pill.Render("⚪ Belum Ada")
 		if app.Installed {
 			badge = st.Badge.Render("🟢 Terpasang")
 		}
 
-		line := fmt.Sprintf("%-20s  %-18s  %s", app.Name, "["+app.Category+"]", badge)
+		line := fmt.Sprintf("%-22s  %-16s  %s", app.Name, "["+app.Category+"]", badge)
 		if i == selectedApp {
 			listItems = append(listItems, st.RowSelected.Width(contentWidth/2-4).Render("▶ "+line))
 		} else {
@@ -61,7 +103,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 	}
 
 	// Limit visible app items to terminal height with smooth scrolling
-	maxVisible := 14
+	maxVisible := 13
 	startIdx := 0
 	if selectedApp >= maxVisible {
 		startIdx = selectedApp - maxVisible + 1
@@ -74,8 +116,8 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	listPanel := st.Card.Width(contentWidth/2 - 2).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render(fmt.Sprintf("📦 Katalog Aplikasi (%d Aplikasi Tersedia):", len(catalog))),
-			st.Subtitle.Render("Gunakan [↑ / ↓] untuk memilih, [Enter/I] pasang, [X] hapus"),
+			st.Title.Render(fmt.Sprintf("📦 Katalog Aplikasi (%d/%d Ditampilkan):", len(filteredCatalog), len(catalog))),
+			st.Subtitle.Render("Gunakan [↑ / ↓] pilih, [Enter/I] pasang, [X] hapus"),
 			"",
 			strings.Join(visibleList, "\n"),
 		),
@@ -83,8 +125,8 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	// Selected App Detail Panel
 	var detailPanel string
-	if selectedApp >= 0 && selectedApp < len(catalog) {
-		app := catalog[selectedApp]
+	if selectedApp >= 0 && selectedApp < len(filteredCatalog) {
+		app := filteredCatalog[selectedApp].Item
 		statusText := "Belum Terpasang di Server"
 		actionBtn := st.ButtonActive.Render("👉 Tekan [Enter] atau [I] untuk Pasang Sekarang")
 		if app.Installed {
@@ -92,14 +134,21 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 			actionBtn = st.PillDanger.Render("🗑️ Tekan [X] untuk Menghapus (Uninstall)")
 		}
 
+		distroInstallMethod := "dietpi-software install " + app.DietPiID
+		if distro == system.DistroArch {
+			distroInstallMethod = "pacman -Sy " + app.ArchPkg
+		} else if distro == system.DistroUbuntu || distro == system.DistroDebian {
+			distroInstallMethod = "apt-get install -y " + app.PackageName
+		}
+
 		thirdPartyBadge := ""
 		if app.IsThirdParty {
-			thirdPartyBadge = "\n🛡️ Tipe: Vendor Pihak Ketiga Terpercaya (Official Verified)"
+			thirdPartyBadge = "\n🛡️ Tipe: Vendor Pihak Ketiga Resmi Terverifikasi"
 		}
 
 		detailContent := fmt.Sprintf(
-			"📌 Aplikasi: %s\n🏷️ Kategori: %s\n📡 Port Layanan: %s\n📊 Status: %s%s\n\n📖 Deskripsi:\n%s\n\n💡 Rekomendasi Senior:\n%s\n\n⚡ Aksi Cepat:\n%s",
-			app.Name, app.Category, app.Port, statusText, thirdPartyBadge,
+			"📌 Aplikasi: %s\n🏷️ Kategori: %s\n📡 Port Layanan: %s\n⚙️ Perintah Sistem: %s\n📊 Status: %s%s\n\n📖 Deskripsi:\n%s\n\n💡 Rekomendasi Senior:\n%s\n\n⚡ Aksi Cepat:\n%s",
+			app.Name, app.Category, app.Port, distroInstallMethod, statusText, thirdPartyBadge,
 			app.Description,
 			app.Insight,
 			actionBtn,
@@ -115,7 +164,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 		lipgloss.JoinVertical(lipgloss.Left,
 			activeArtwork,
 			"",
-			st.RowNormal.Render("⌨️ Aksi Cepat: [↑/↓] Pilih App | [Enter/I] Pasang | [X] Hapus | [T] Tema | [M] Model WM | [W] Wallpaper/Wizard | [q] Keluar"),
+			st.RowNormal.Render("⌨️ Navigasi: [Tab/Shift+Tab] Ganti Kategori | [↑/↓] Pilih App | [Enter/I] Pasang | [X] Hapus | [1-3] Tab | [T] Tema | [M] WM | [W] Setup | [q] Keluar"),
 		),
 	)
 
@@ -124,6 +173,8 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 		sub,
 		"",
 		infoBanner,
+		"",
+		filterContainer,
 		"",
 		mainRow,
 		"",

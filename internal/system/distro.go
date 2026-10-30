@@ -11,8 +11,10 @@ type DistroType string
 
 const (
 	DistroDietPi  DistroType = "DietPi"
+	DistroArch    DistroType = "Arch Linux"
 	DistroUbuntu  DistroType = "Ubuntu"
 	DistroDebian  DistroType = "Debian"
+	DistroFedora  DistroType = "Fedora"
 	DistroGeneric DistroType = "Linux"
 )
 
@@ -22,26 +24,48 @@ func DetectDistro() DistroType {
 		return DistroGeneric
 	}
 
-	// 1. Check DietPi
+	// 1. Check DietPi (Filesystem markers or CLI)
 	if _, err := os.Stat("/boot/dietpi"); err == nil {
+		return DistroDietPi
+	}
+	if _, err := os.Stat("/boot/dietpi.txt"); err == nil {
 		return DistroDietPi
 	}
 	if _, err := exec.LookPath("dietpi-software"); err == nil {
 		return DistroDietPi
 	}
 
-	// 2. Read /etc/os-release
+	// 2. Check Arch Linux
+	if _, err := os.Stat("/etc/arch-release"); err == nil {
+		return DistroArch
+	}
+	if _, err := exec.LookPath("pacman"); err == nil {
+		return DistroArch
+	}
+
+	// 3. Check Fedora
+	if _, err := os.Stat("/etc/fedora-release"); err == nil {
+		return DistroFedora
+	}
+
+	// 4. Read /etc/os-release
 	data, err := os.ReadFile("/etc/os-release")
 	if err == nil {
 		content := strings.ToLower(string(data))
 		if strings.Contains(content, "dietpi") {
 			return DistroDietPi
 		}
+		if strings.Contains(content, "arch") || strings.Contains(content, "manjaro") || strings.Contains(content, "endeavouros") {
+			return DistroArch
+		}
 		if strings.Contains(content, "ubuntu") {
 			return DistroUbuntu
 		}
-		if strings.Contains(content, "debian") {
+		if strings.Contains(content, "debian") || strings.Contains(content, "raspbian") {
 			return DistroDebian
+		}
+		if strings.Contains(content, "fedora") || strings.Contains(content, "rhel") || strings.Contains(content, "rocky") {
+			return DistroFedora
 		}
 	}
 

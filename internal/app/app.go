@@ -41,10 +41,11 @@ type Model struct {
 	Hardware system.HardwareInfo
 
 	// Apps data & cursor & dialog
-	Catalog       []system.AppCatalogItem
-	CatalogCursor int
-	PackageCount  int
-	AppDialog     views.AppDialogState
+	Catalog        []system.AppCatalogItem
+	CatalogCursor  int
+	ActiveCategory int
+	PackageCount   int
+	AppDialog      views.AppDialogState
 
 	// Settings cursor & image input modal
 	SettingsCursor int
@@ -273,14 +274,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "tab":
-			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
+			if m.ActiveWorkspace == components.WorkspaceDashboard {
+				m.ActiveCategory = (m.ActiveCategory + 1) % len(views.CategoryFilterList)
+				m.CatalogCursor = 0
+			} else {
+				m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
+			}
 			return m, nil
 
 		case "shift+tab":
-			if m.ActiveWorkspace > 0 {
-				m.ActiveWorkspace--
+			if m.ActiveWorkspace == components.WorkspaceDashboard {
+				if m.ActiveCategory > 0 {
+					m.ActiveCategory--
+				} else {
+					m.ActiveCategory = len(views.CategoryFilterList) - 1
+				}
+				m.CatalogCursor = 0
 			} else {
-				m.ActiveWorkspace = components.WorkspaceGuide
+				if m.ActiveWorkspace > 0 {
+					m.ActiveWorkspace--
+				} else {
+					m.ActiveWorkspace = components.WorkspaceGuide
+				}
 			}
 			return m, nil
 
@@ -295,16 +310,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Action Keys: ENTER or I anywhere in Launcher to Install!
 		case "enter", "i", "I":
-			if m.ActiveWorkspace == components.WorkspaceDashboard && len(m.Catalog) > 0 {
-				selected := m.Catalog[m.CatalogCursor]
-				action := "install"
-				if selected.Installed {
-					action = "uninstall"
-				}
-				m.AppDialog = views.AppDialogState{
-					Active: true,
-					Action: action,
-					App:    selected,
+			if m.ActiveWorkspace == components.WorkspaceDashboard {
+				filtered := m.getFilteredCatalog()
+				if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
+					selected := filtered[m.CatalogCursor]
+					action := "install"
+					if selected.Installed {
+						action = "uninstall"
+					}
+					m.AppDialog = views.AppDialogState{
+						Active: true,
+						Action: action,
+						App:    selected,
+					}
 				}
 			} else if m.ActiveWorkspace == components.WorkspaceSettings {
 				m.applySettingSelection()
@@ -312,16 +330,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "x", "X":
-			if m.ActiveWorkspace == components.WorkspaceDashboard && len(m.Catalog) > 0 {
-				selected := m.Catalog[m.CatalogCursor]
-				if selected.Installed {
-					m.AppDialog = views.AppDialogState{
-						Active: true,
-						Action: "uninstall",
-						App:    selected,
+			if m.ActiveWorkspace == components.WorkspaceDashboard {
+				filtered := m.getFilteredCatalog()
+				if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
+					selected := filtered[m.CatalogCursor]
+					if selected.Installed {
+						m.AppDialog = views.AppDialogState{
+							Active: true,
+							Action: "uninstall",
+							App:    selected,
+						}
+					} else {
+						m.StatusMessage = "Aplikasi ini belum terpasang."
 					}
-				} else {
-					m.StatusMessage = "Aplikasi ini belum terpasang."
 				}
 			}
 			return m, nil
@@ -449,10 +470,30 @@ func (m *Model) handleAppModalKeys(key string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// getFilteredCatalog returns applications matching active category
+func (m *Model) getFilteredCatalog() []system.AppCatalogItem {
+	if m.ActiveCategory == 0 {
+		return m.Catalog
+	}
+	selectedCatName := views.CategoryFilterList[m.ActiveCategory]
+	var list []system.AppCatalogItem
+	for _, app := range m.Catalog {
+		if app.Category == selectedCatName {
+			list = append(list, app)
+		}
+	}
+	return list
+}
+
 func (m *Model) moveCursor(delta int) {
 	switch m.ActiveWorkspace {
 	case components.WorkspaceDashboard:
-		m.CatalogCursor = clamp(m.CatalogCursor+delta, 0, len(m.Catalog)-1)
+		filtered := m.getFilteredCatalog()
+		if len(filtered) > 0 {
+			m.CatalogCursor = clamp(m.CatalogCursor+delta, 0, len(filtered)-1)
+		} else {
+			m.CatalogCursor = 0
+		}
 	case components.WorkspaceSettings:
 		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 11) // 0-2 themes, 3-5 WM, 6-11 Wallpaper
 	}
@@ -484,7 +525,7 @@ func (m *Model) applySettingSelection() {
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.5",
+		ConfigVersion:     "v0.9.0-beta.6",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}
@@ -585,7 +626,7 @@ func (m Model) View() string {
 	var currentView string
 	switch m.ActiveWorkspace {
 	case components.WorkspaceDashboard:
-		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.AppDialog, m.WMMode, m.WallpaperType, m.WallpaperPreset, st, m.Language, width, height)
+		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.ActiveCategory, m.AppDialog, m.WMMode, m.WallpaperType, m.WallpaperPreset, st, m.Language, width, height)
 	case components.WorkspaceSettings:
 		currentView = views.RenderSettings(m.ThemeMode, m.WMMode, m.WallpaperType, m.WallpaperPreset, m.SettingsCursor, m.ImageInputPath, st, width, height)
 	case components.WorkspaceGuide:
