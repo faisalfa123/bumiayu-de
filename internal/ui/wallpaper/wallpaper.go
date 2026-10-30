@@ -63,47 +63,47 @@ func getDynamicTimeWallpaper() string {
 func getPresetArtwork(scene PresetScene) string {
 	switch scene {
 	case SceneSawahHijau:
-		return `  🌾 HAMBARAN SAWAH TERASERING BUMIAYU 🌾
-  ─────────────────────────────────────────────────────────────
-  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-  ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
-  █████████████████████████████████████████████████████████████
-  ░░ 🌾 Damai, Subur, dan Sejuk Menyejukkan Server Anda 🌾 ░░`
+		return "\x1b[1;32m  🌾 HAMBARAN SAWAH TERASERING BUMIAYU 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 60) + "\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m  ░░ 🌾 Damai, Subur, dan Sejuk Menyejukkan Server Anda 🌾 ░░\x1b[0m"
 
 	case SceneLenteraSenja:
-		return `  🏮 LENTERA SENJA BUMIAYU 🏮
-  ─────────────────────────────────────────────────────────────
-             .---.
-            /     \       * Menerangi pekatnya konsol terminal
-           | () () |      * Menuntun pengguna selayaknya ahli
-            \  _  /
-             '---'
-            [====]
-  ░░░░░░░░░░(____)░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
-  ░░ 🏮 Hangat Menyala, Memandu Perjalanan Linux Anda 🏮 ░░`
+		return "\x1b[1;33m  🏮 LENTERA SENJA BUMIAYU 🏮\x1b[0m\n" +
+			"\x1b[38;2;249;115;22m  " + strings.Repeat("━", 60) + "\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m             .---.            \x1b[38;2;254;240;138m✨ Menerangi pekatnya konsol terminal\x1b[0m\n" +
+			"\x1b[38;2;249;115;22m            /     \\           \x1b[38;2;253;224;71m🔥 Menuntun pengguna selayaknya ahli\x1b[0m\n" +
+			"\x1b[38;2;234;88;12m           | () () |          \x1b[38;2;250;204;21m🏮 Kehangatan suasana kota Bumiayu\x1b[0m\n" +
+			"\x1b[38;2;194;65;12m            \\  _  /\n" +
+			"             '---'\n" +
+			"            [====]\n" +
+			"\x1b[38;2;251;191;36m  ░░░░░░░░░░(____)░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\x1b[0m\n" +
+			"\x1b[1;31m  ░░ 🏮 Hangat Menyala, Memandu Perjalanan Linux Anda 🏮 ░░\x1b[0m"
 
 	case SceneMalamBintang:
-		return `  🌌 LANGIT MALAM BERBINTANG BUMIAYU 🌌
-  ─────────────────────────────────────────────────────────────
-    *     .            .              .     *          .   *
-              *               *                .           
-        .             .                  *          .     .
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  █████████████████████████████████████████████████████████████
-  ░░ 🌌 Hening dan Tangguh Menjaga Server Latar Belakang 🌌 ░░`
+		return "\x1b[1;36m  🌌 LANGIT MALAM BERBINTANG BUMIAYU 🌌\x1b[0m\n" +
+			"\x1b[38;2;56;189;248m  " + strings.Repeat("━", 60) + "\x1b[0m\n" +
+			"\x1b[38;2;224;242;254m    ★     .            .      ✦       .     ★          .   ★\x1b[0m\n" +
+			"\x1b[38;2;186;230;253m        .     ★               ★                .      ✦    \x1b[0m\n" +
+			"\x1b[38;2;125;211;252m    ✦             .      ✦           .     ★          .    \x1b[0m\n" +
+			"\x1b[38;2;14;165;233m  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\x1b[0m\n" +
+			"\x1b[38;2;2;132;199m  ████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;36m  ░░ 🌌 Hening dan Tangguh Menjaga Server Latar Belakang 🌌 ░░\x1b[0m"
 
 	default: // SceneGunungSlamet
-		return `  🏔️ GUNUNG SLAMET MEGAH BUMIAYU 🏔️
-  ─────────────────────────────────────────────────────────────
-                /\
-               /  \       /\
-              /    \     /  \
-             /      \   /    \       /\
-            /   /\   \ /      \     /  \
-           /   /  \   \        \   /    \
-  ________/___/____\___\________\_/______\_____________________
-  ░░ 🏔️ Simbol Ketangguhan & Kedaulatan Server ODROID-C2 🏔️ ░░`
+		return "\x1b[1;34m  🏔️ GUNUNG SLAMET MEGAH BUMIAYU 🏔️\x1b[0m\n" +
+			"\x1b[38;2;99;102;241m  " + strings.Repeat("━", 60) + "\x1b[0m\n" +
+			"\x1b[38;2;199;210;254m                /\\              \x1b[0m\n" +
+			"\x1b[38;2;165;180;252m               /  \\       /\\    \x1b[0m\n" +
+			"\x1b[38;2;129;140;248m              /    \\     /  \\   \x1b[0m\n" +
+			"\x1b[38;2;99;102;241m             /      \\   /    \\       /\\\x1b[0m\n" +
+			"\x1b[38;2;79;70;229m            /   /\\   \\ /      \\     /  \\\x1b[0m\n" +
+			"\x1b[38;2;67;56;202m           /   /  \\   \\        \\   /    \\\x1b[0m\n" +
+			"\x1b[38;2;55;48;163m  ________/___/____\\___\\________\\_/______\\_____________________\x1b[0m\n" +
+			"\x1b[1;34m  ░░ 🏔️ Simbol Ketangguhan & Kedaulatan Server ODROID-C2 🏔️ ░░\x1b[0m"
 	}
 }
 

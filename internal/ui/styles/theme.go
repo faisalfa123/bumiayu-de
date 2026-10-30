@@ -88,8 +88,6 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 	ts.Subtitle = lipgloss.NewStyle().Foreground(ts.MutedColor).Italic(true)
 
 	ts.TopBar = lipgloss.NewStyle().
-		Background(ts.CardBg).
-		Foreground(ts.TextColor).
 		Padding(0, 1).
 		Border(lipgloss.NormalBorder(), false, false, true, false).
 		BorderForeground(ts.BorderColor)
@@ -131,22 +129,16 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 	ts.Card = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(ts.BorderColor).
-		Background(ts.CardBg).
-		Foreground(ts.TextColor).
 		Padding(1, 2)
 
 	ts.CardActive = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(ts.PrimaryColor).
-		Background(ts.CardBg).
-		Foreground(ts.TextColor).
 		Padding(1, 2)
 
 	ts.Modal = lipgloss.NewStyle().
 		Border(lipgloss.ThickBorder()).
 		BorderForeground(ts.PrimaryColor).
-		Background(ts.CardBg).
-		Foreground(ts.TextColor).
 		Padding(1, 2)
 
 	ts.RowSelected = lipgloss.NewStyle().
@@ -156,12 +148,9 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 		Padding(0, 1)
 
 	ts.RowNormal = lipgloss.NewStyle().
-		Foreground(ts.TextColor).
 		Padding(0, 1)
 
 	ts.Footer = lipgloss.NewStyle().
-		Background(ts.CardBg).
-		Foreground(ts.MutedColor).
 		Padding(0, 1).
 		Border(lipgloss.NormalBorder(), true, false, false, false).
 		BorderForeground(ts.BorderColor)

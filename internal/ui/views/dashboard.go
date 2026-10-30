@@ -37,12 +37,12 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 	header := st.Title.Render("🏝️ BUMIAYU DESKTOP LAUNCHER")
 	sub := st.Subtitle.Render("Pusat Kontrol Sistem Ringan & Peluncur Aplikasi Cepat untuk ODROID-C2 & Server Linux")
 
-	// Hardware Telemetry Banner
-	deviceType := "Linux Standard Server (" + info.Arch + ")"
+	// Hardware Telemetry Banner (Lengkap & Profesional)
+	deviceType := "Linux Server (" + info.Arch + ")"
 	if info.IsOdroidC2 {
 		deviceType = "ODROID-C2 (Amlogic S905 Quad-Core ARM64)"
 	}
-	ramBar := system.GetMemoryBar(info.MemUsagePct, 16)
+	ramBar := system.GetMemoryBar(info.MemUsagePct, 14)
 
 	healthBadge := st.Badge.Render("🟢 Normal & Sehat")
 	if info.MemUsagePct > 80 || info.TemperatureC > 70 {
@@ -50,9 +50,23 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 	}
 
 	distro := system.DetectDistro()
+	sysCol1 := fmt.Sprintf("💻 Perangkat: %s [%s]\n🌐 Hostname : %s | Uptime: %s", deviceType, distro, info.Hostname, info.UptimeStr)
+	sysCol2 := fmt.Sprintf("🌡️ Suhu CPU: %.1f°C | Load Avg: %.2f, %.2f, %.2f\n📊 Status  : %s", info.TemperatureC, info.Load1, info.Load5, info.Load15, healthBadge)
+	sysCol3 := fmt.Sprintf("🧠 RAM : %d/%d MB (%s %.1f%%)\n💾 Swap: %d/%d MB (%.1f%%)", info.MemUsedMB, info.MemTotalMB, ramBar, info.MemUsagePct, info.SwapUsedMB, info.SwapTotalMB, info.SwapUsagePct)
+
+	colW := (contentWidth - 6) / 3
 	infoBanner := st.Card.Width(contentWidth).Render(
-		fmt.Sprintf("💻 %s [%s]  |  Host: %s  |  Suhu: %.1f°C  |  RAM: %d/%d MB %s  |  Status: %s",
-			deviceType, distro, info.Hostname, info.TemperatureC, info.MemUsedMB, info.MemTotalMB, ramBar, healthBadge),
+		lipgloss.JoinVertical(lipgloss.Left,
+			st.Title.Render("📊 MONITORING SISTEM & PERANGKAT KERAS REAL-TIME:"),
+			"",
+			lipgloss.JoinHorizontal(lipgloss.Top,
+				lipgloss.NewStyle().Width(colW).Render(sysCol1),
+				"  ",
+				lipgloss.NewStyle().Width(colW).Render(sysCol2),
+				"  ",
+				lipgloss.NewStyle().Width(colW).Render(sysCol3),
+			),
+		),
 	)
 
 	// Category Filter Pill Bar

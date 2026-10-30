@@ -525,7 +525,7 @@ func (m *Model) applySettingSelection() {
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.6",
+		ConfigVersion:     "v0.9.0-beta.7",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}
