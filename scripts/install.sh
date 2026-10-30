@@ -56,15 +56,15 @@ case "$ARCH" in
     ;;
 esac
 
-# 3. Fetch latest release version from GitHub API
+# 3. Fetch latest release version from GitHub API (including pre-releases/betas)
 echo -e "🌐 Memeriksa versi rilis terbaru dari GitHub..."
-LATEST_TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || true)
+LATEST_TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases" | grep '"tag_name":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
 
 if [ -z "$LATEST_TAG" ]; then
-  LATEST_TAG="v1.0.0"
+  LATEST_TAG="v0.9.0-beta.1"
   echo -e "${YELLOW}Menggunakan versi default: ${LATEST_TAG}${NC}"
 else
-  echo -e "🚀 Versi terbaru ditemukan: ${GREEN}${LATEST_TAG}${NC}"
+  echo -e "🚀 Versi ditemukan: ${GREEN}${LATEST_TAG}${NC}"
 fi
 
 DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${LATEST_TAG}/bumiayu-linux-${TARGET_ARCH}.tar.gz"
