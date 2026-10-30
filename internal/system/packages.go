@@ -175,6 +175,26 @@ func checkPackageInstalled(pkg string) bool {
 	return false
 }
 
+// ExecutePackageAction performs real install or uninstall
+func ExecutePackageAction(action, pkgName string) (string, error) {
+	if runtime.GOOS != "linux" {
+		if action == "install" {
+			return "Reading package lists... Done\nBuilding dependency tree... Done\nSetting up " + pkgName + "...\nProcessing triggers for systemd...\nStatus: Successfully installed " + pkgName + "!", nil
+		}
+		return "Removing " + pkgName + "...\nPurging configuration files...\nStatus: Successfully removed " + pkgName + "!", nil
+	}
+
+	var cmd *exec.Cmd
+	if action == "install" {
+		cmd = exec.Command("apt-get", "install", "-y", pkgName)
+	} else {
+		cmd = exec.Command("apt-get", "remove", "-y", pkgName)
+	}
+
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
 // GetInstalledPackageCount returns total count of installed packages on the system
 func GetInstalledPackageCount() int {
 	if runtime.GOOS != "linux" {

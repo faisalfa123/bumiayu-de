@@ -1,12 +1,12 @@
 package app
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/bumiayu/bumiayu-de/internal/i18n"
 	"github.com/bumiayu/bumiayu-de/internal/system"
 	"github.com/bumiayu/bumiayu-de/internal/ui/components"
+	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
 	"github.com/bumiayu/bumiayu-de/internal/ui/views"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -15,54 +15,43 @@ import (
 // TickMsg triggers telemetry refresh every 2 seconds
 type TickMsg time.Time
 
+// AppActionMsg reports result of background install/uninstall
+type AppActionMsg struct {
+	Logs    string
+	Success bool
+}
+
 // Model is the main state of Bumiayu TUI Desktop Environment
 type Model struct {
 	width  int
 	height int
 
 	ActiveWorkspace components.Workspace
+	ThemeMode       styles.ThemeMode
+	WMMode          views.WMMode
 	Language        i18n.Language
 	StatusMessage   string
 
 	// Telemetry data
 	Hardware system.HardwareInfo
 
-	// Workspaces Data & Cursors
-	// 2. Apps
-	Catalog          []system.AppCatalogItem
-	CatalogCursor    int
-	PackageCount     int
+	// 2. Apps data & cursor & dialog
+	Catalog       []system.AppCatalogItem
+	CatalogCursor int
+	PackageCount  int
+	AppDialog     views.AppDialogState
 
-	// 3. Services
-	Services         []system.ServiceItem
-	ServicesCursor   int
-	ShowingLogs      bool
-	CurrentLogs      string
-
-	// 4. Security
-	Security         system.SecurityState
-
-	// 5. Users
-	Users            []system.UserAccount
-	UsersCursor      int
-
-	// 6. Files
-	CurrentPath      string
-	FileEntries      []system.FileEntry
-	FilesCursor      int
-	FilePreview      string
-
-	// 7. Tasks
-	Processes        []system.ProcessItem
-	ProcessesCursor  int
+	// 3. Settings cursor
+	SettingsCursor int
 }
 
-// InitialModel initializes the state
+// InitialModel initializes the state with default clean Light Theme
 func InitialModel() Model {
 	m := Model{
 		ActiveWorkspace: components.WorkspaceDashboard,
+		ThemeMode:       styles.ThemeLight, // Default: Tampilan Cerah Bersih & Simpel
+		WMMode:          views.WMFloating,  // Default: Window Mengambang Minimalis
 		Language:        i18n.ID,
-		CurrentPath:     "/etc",
 	}
 
 	m.refreshAllData()
@@ -73,19 +62,6 @@ func (m *Model) refreshAllData() {
 	m.Hardware = system.GetHardwareInfo()
 	m.Catalog = system.GetAppCatalog()
 	m.PackageCount = system.GetInstalledPackageCount()
-	m.Services = system.GetServices()
-	m.Security = system.GetSecurityState()
-	m.Users = system.GetUserAccounts()
-	m.Processes = system.GetProcessList()
-
-	entries, err := system.ListDirectory(m.CurrentPath)
-	if err == nil {
-		m.FileEntries = entries
-		if len(entries) > 0 && !entries[0].IsDir {
-			preview, _ := system.ReadFilePreview(entries[0].Path, 15)
-			m.FilePreview = preview
-		}
-	}
 }
 
 func tickCmd() tea.Cmd {
@@ -108,30 +84,72 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case TickMsg:
-		// Periodic telemetry update
 		m.Hardware = system.GetHardwareInfo()
-		m.Processes = system.GetProcessList()
 		return m, tickCmd()
 
+	case AppActionMsg:
+		m.AppDialog.IsRunning = false
+		m.AppDialog.Logs = msg.Logs
+		m.AppDialog.Success = msg.Success
+		m.refreshAllData()
+		return m, nil
+
 	case tea.KeyMsg:
-		switch msg.String() {
+		key := msg.String()
+
+		// If App Modal is Active, handle modal shortcuts
+		if m.AppDialog.Active {
+			if m.AppDialog.IsRunning {
+				return m, nil // Wait for completion
+			}
+
+			if m.AppDialog.Logs != "" {
+				// Finished view: any key closes modal
+				if key == "enter" || key == "esc" || key == "q" || key == " " {
+					m.AppDialog.Active = false
+					m.AppDialog.Logs = ""
+					return m, nil
+				}
+			}
+
+			// Confirmation view
+			if key == "y" || key == "Y" {
+				m.AppDialog.IsRunning = true
+				m.AppDialog.Logs = "Menjalankan perintah " + m.AppDialog.Action + " " + m.AppDialog.App.PackageName + "..."
+				action := m.AppDialog.Action
+				pkg := m.AppDialog.App.PackageName
+				return m, func() tea.Msg {
+					out, err := system.ExecutePackageAction(action, pkg)
+					success := err == nil
+					return AppActionMsg{Logs: out, Success: success}
+				}
+			}
+
+			if key == "n" || key == "N" || key == "esc" {
+				m.AppDialog.Active = false
+				return m, nil
+			}
+			return m, nil
+		}
+
+		// Global navigation shortcuts
+		switch key {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
-		// Switch language
-		case "L", "l":
-			if m.ActiveWorkspace != components.WorkspaceServices {
-				if m.Language == i18n.ID {
-					m.Language = i18n.EN
-					m.StatusMessage = "Language switched to English"
-				} else {
-					m.Language = i18n.ID
-					m.StatusMessage = "Bahasa diganti ke Bahasa Indonesia"
-				}
-				return m, nil
+		// Quick Theme Toggle (T)
+		case "t", "T":
+			m.ThemeMode = (m.ThemeMode + 1) % 3
+			themeName := "Terang"
+			if m.ThemeMode == styles.ThemeWarm {
+				themeName = "Hangat"
+			} else if m.ThemeMode == styles.ThemeDark {
+				themeName = "Gelap"
 			}
+			m.StatusMessage = "Tema diubah ke: " + themeName
+			return m, nil
 
-		// Workspace navigation
+		// Direct Tab Switching via numbers 1 - 4
 		case "1":
 			m.ActiveWorkspace = components.WorkspaceDashboard
 			return m, nil
@@ -139,30 +157,34 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.ActiveWorkspace = components.WorkspaceApps
 			return m, nil
 		case "3":
-			m.ActiveWorkspace = components.WorkspaceServices
+			m.ActiveWorkspace = components.WorkspaceSettings
 			return m, nil
 		case "4":
-			m.ActiveWorkspace = components.WorkspaceSecurity
+			m.ActiveWorkspace = components.WorkspaceGuide
 			return m, nil
-		case "5":
-			m.ActiveWorkspace = components.WorkspaceUsers
+
+		// Dynamic Arrow Tab Switching (Left / Right)
+		case "left", "h":
+			if m.ActiveWorkspace > 0 {
+				m.ActiveWorkspace--
+			} else {
+				m.ActiveWorkspace = components.WorkspaceGuide
+			}
 			return m, nil
-		case "6":
-			m.ActiveWorkspace = components.WorkspaceFiles
-			return m, nil
-		case "7":
-			m.ActiveWorkspace = components.WorkspaceTasks
+
+		case "right", "l":
+			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 4
 			return m, nil
 
 		case "tab":
-			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 7
+			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 4
 			return m, nil
 
 		case "shift+tab":
-			if m.ActiveWorkspace == 0 {
-				m.ActiveWorkspace = 6
-			} else {
+			if m.ActiveWorkspace > 0 {
 				m.ActiveWorkspace--
+			} else {
+				m.ActiveWorkspace = components.WorkspaceGuide
 			}
 			return m, nil
 
@@ -175,113 +197,44 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.moveCursor(1)
 			return m, nil
 
-		case "esc":
-			if m.ShowingLogs {
-				m.ShowingLogs = false
-				return m, nil
-			}
-
-		// Action keys
-		case "s", "S":
-			if m.ActiveWorkspace == components.WorkspaceServices && len(m.Services) > 0 {
-				svc := m.Services[m.ServicesCursor].Name
-				out, err := system.ControlService("start", svc)
-				if err != nil {
-					m.StatusMessage = "Gagal menyalakan: " + err.Error()
-				} else {
-					m.StatusMessage = "Service " + svc + " dinyalakan."
-					_ = out
+		// Action Keys
+		case "enter", "i", "I":
+			if m.ActiveWorkspace == components.WorkspaceApps && len(m.Catalog) > 0 {
+				selected := m.Catalog[m.CatalogCursor]
+				action := "install"
+				if selected.Installed {
+					action = "uninstall"
 				}
-				m.Services = system.GetServices()
-			}
-
-		case "t", "T":
-			if m.ActiveWorkspace == components.WorkspaceServices && len(m.Services) > 0 {
-				svc := m.Services[m.ServicesCursor].Name
-				out, err := system.ControlService("stop", svc)
-				if err != nil {
-					m.StatusMessage = "Gagal menghentikan: " + err.Error()
-				} else {
-					m.StatusMessage = "Service " + svc + " dihentikan."
-					_ = out
+				m.AppDialog = views.AppDialogState{
+					Active: true,
+					Action: action,
+					App:    selected,
 				}
-				m.Services = system.GetServices()
+			} else if m.ActiveWorkspace == components.WorkspaceSettings {
+				m.applySettingSelection()
 			}
+			return m, nil
 
-		case "r", "R":
-			if m.ActiveWorkspace == components.WorkspaceServices && len(m.Services) > 0 {
-				svc := m.Services[m.ServicesCursor].Name
-				out, err := system.ControlService("restart", svc)
-				if err != nil {
-					m.StatusMessage = "Gagal restart: " + err.Error()
-				} else {
-					m.StatusMessage = "Service " + svc + " berhasil di-restart."
-					_ = out
-				}
-				m.Services = system.GetServices()
-			}
-
-		case "u", "U":
-			if m.ActiveWorkspace == components.WorkspaceSecurity {
-				newState := !m.Security.UfwActive
-				system.ToggleUFW(newState)
-				m.Security = system.GetSecurityState()
-				if newState {
-					m.StatusMessage = "Firewall UFW Diaktifkan."
-				} else {
-					m.StatusMessage = "Firewall UFW Dinonaktifkan."
-				}
-			}
-
-		case "g", "G":
-			if m.ActiveWorkspace == components.WorkspaceUsers && len(m.Users) > 0 {
-				user := m.Users[m.UsersCursor].Username
-				system.ModifyUserSudoRole(user, true)
-				m.StatusMessage = "Hak akses Sudo diberikan ke: " + user
-				m.Users = system.GetUserAccounts()
-			}
-
-		case "v", "V":
-			if m.ActiveWorkspace == components.WorkspaceUsers && len(m.Users) > 0 {
-				user := m.Users[m.UsersCursor].Username
-				system.ModifyUserSudoRole(user, false)
-				m.StatusMessage = "Hak akses Sudo dicabut dari: " + user
-				m.Users = system.GetUserAccounts()
-			}
-
-		case "K":
-			if m.ActiveWorkspace == components.WorkspaceTasks && len(m.Processes) > 0 {
-				pid := m.Processes[m.ProcessesCursor].PID
-				name := m.Processes[m.ProcessesCursor].Name
-				err := system.KillProcess(pid, false)
-				if err != nil {
-					m.StatusMessage = fmt.Sprintf("Gagal kill %s: %s", name, err.Error())
-				} else {
-					m.StatusMessage = fmt.Sprintf("Proses %s (PID %d) telah dihentikan (SIGTERM)", name, pid)
-				}
-				m.Processes = system.GetProcessList()
-			}
-
-		case "enter":
-			if m.ActiveWorkspace == components.WorkspaceServices && len(m.Services) > 0 {
-				svc := m.Services[m.ServicesCursor].Name
-				m.CurrentLogs = system.GetServiceLogs(svc, 30)
-				m.ShowingLogs = !m.ShowingLogs
-			} else if m.ActiveWorkspace == components.WorkspaceFiles && len(m.FileEntries) > 0 {
-				entry := m.FileEntries[m.FilesCursor]
-				if entry.IsDir {
-					m.CurrentPath = entry.Path
-					entries, err := system.ListDirectory(m.CurrentPath)
-					if err == nil {
-						m.FileEntries = entries
-						m.FilesCursor = 0
-						m.FilePreview = ""
+		case "x", "X":
+			if m.ActiveWorkspace == components.WorkspaceApps && len(m.Catalog) > 0 {
+				selected := m.Catalog[m.CatalogCursor]
+				if selected.Installed {
+					m.AppDialog = views.AppDialogState{
+						Active: true,
+						Action: "uninstall",
+						App:    selected,
 					}
 				} else {
-					preview, _ := system.ReadFilePreview(entry.Path, 18)
-					m.FilePreview = preview
+					m.StatusMessage = "Aplikasi ini belum terpasang."
 				}
 			}
+			return m, nil
+
+		case " ":
+			if m.ActiveWorkspace == components.WorkspaceSettings {
+				m.applySettingSelection()
+			}
+			return m, nil
 		}
 	}
 
@@ -292,18 +245,18 @@ func (m *Model) moveCursor(delta int) {
 	switch m.ActiveWorkspace {
 	case components.WorkspaceApps:
 		m.CatalogCursor = clamp(m.CatalogCursor+delta, 0, len(m.Catalog)-1)
-	case components.WorkspaceServices:
-		m.ServicesCursor = clamp(m.ServicesCursor+delta, 0, len(m.Services)-1)
-	case components.WorkspaceUsers:
-		m.UsersCursor = clamp(m.UsersCursor+delta, 0, len(m.Users)-1)
-	case components.WorkspaceFiles:
-		m.FilesCursor = clamp(m.FilesCursor+delta, 0, len(m.FileEntries)-1)
-		if len(m.FileEntries) > 0 && !m.FileEntries[m.FilesCursor].IsDir {
-			preview, _ := system.ReadFilePreview(m.FileEntries[m.FilesCursor].Path, 18)
-			m.FilePreview = preview
-		}
-	case components.WorkspaceTasks:
-		m.ProcessesCursor = clamp(m.ProcessesCursor+delta, 0, len(m.Processes)-1)
+	case components.WorkspaceSettings:
+		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 5) // 0-2 themes, 3-5 WM models
+	}
+}
+
+func (m *Model) applySettingSelection() {
+	if m.SettingsCursor < 3 {
+		m.ThemeMode = styles.ThemeMode(m.SettingsCursor)
+		m.StatusMessage = "Tema berhasil diterapkan!"
+	} else {
+		m.WMMode = views.WMMode(m.SettingsCursor - 3)
+		m.StatusMessage = "Model Window Manager berhasil diubah!"
 	}
 }
 
@@ -331,37 +284,35 @@ func (m Model) View() string {
 		height = 24
 	}
 
-	// 1. Top Desktop Bar
-	topBar := components.RenderTopBar(m.Hardware, m.Language, width)
+	// 1. Get active theme styling
+	st := styles.GetTheme(m.ThemeMode)
 
-	// 2. Workspace Tabs
-	workspaceTabs := components.RenderWorkspaceTabs(m.ActiveWorkspace, m.Language, width)
+	// 2. Top Desktop Bar
+	topBar := components.RenderTopBar(m.Hardware, st, m.Language, width)
 
-	// 3. Main Workspace View
+	// 3. Workspace Navigation Tabs
+	workspaceTabs := components.RenderWorkspaceTabs(m.ActiveWorkspace, st, width)
+
+	// 4. Main Workspace View
 	var currentView string
 	switch m.ActiveWorkspace {
 	case components.WorkspaceDashboard:
-		currentView = views.RenderDashboard(m.Hardware, m.Language, width, height)
+		currentView = views.RenderDashboard(m.Hardware, m.WMMode, st, m.Language, width, height)
 	case components.WorkspaceApps:
-		currentView = views.RenderApps(m.Catalog, m.CatalogCursor, m.PackageCount, m.Language, width, height)
-	case components.WorkspaceServices:
-		currentView = views.RenderServices(m.Services, m.ServicesCursor, m.ShowingLogs, m.CurrentLogs, m.Language, width, height)
-	case components.WorkspaceSecurity:
-		currentView = views.RenderSecurity(m.Security, m.Language, width, height)
-	case components.WorkspaceUsers:
-		currentView = views.RenderUsers(m.Users, m.UsersCursor, m.Language, width, height)
-	case components.WorkspaceFiles:
-		currentView = views.RenderFiles(m.CurrentPath, m.FileEntries, m.FilesCursor, m.FilePreview, m.Language, width, height)
-	case components.WorkspaceTasks:
-		currentView = views.RenderTasks(m.Processes, m.ProcessesCursor, m.Language, width, height)
+		currentView = views.RenderApps(m.Catalog, m.CatalogCursor, m.PackageCount, m.AppDialog, st, m.Language, width, height)
+	case components.WorkspaceSettings:
+		currentView = views.RenderSettings(m.ThemeMode, m.WMMode, m.SettingsCursor, st, width, height)
+	case components.WorkspaceGuide:
+		currentView = views.RenderGuide(st, width, height)
 	}
 
-	// 4. Status Bar
-	statusBar := components.RenderStatusBar(m.Language, width, m.StatusMessage)
+	// 5. Status Bar
+	statusBar := components.RenderStatusBar(st, width, m.StatusMessage)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		topBar,
 		workspaceTabs,
+		"",
 		currentView,
 		"",
 		statusBar,

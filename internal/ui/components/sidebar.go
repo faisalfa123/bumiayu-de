@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bumiayu/bumiayu-de/internal/i18n"
 	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -15,42 +14,34 @@ type Workspace int
 const (
 	WorkspaceDashboard Workspace = iota
 	WorkspaceApps
-	WorkspaceServices
-	WorkspaceSecurity
-	WorkspaceUsers
-	WorkspaceFiles
-	WorkspaceTasks
+	WorkspaceSettings
+	WorkspaceGuide
 )
 
-// RenderWorkspaceTabs renders the horizontal navigation tabs
-func RenderWorkspaceTabs(active Workspace, lang i18n.Language, width int) string {
-	t := i18n.Get(lang)
-
+// RenderWorkspaceTabs renders horizontal navigation tabs with active theme
+func RenderWorkspaceTabs(active Workspace, st styles.ThemeStyles, width int) string {
 	tabs := []struct {
 		ws   Workspace
 		name string
-		icon string
+		num  string
 	}{
-		{WorkspaceDashboard, t.TabDashboard, "📊"},
-		{WorkspaceApps, t.TabApps, "📦"},
-		{WorkspaceServices, t.TabServices, "⚙️"},
-		{WorkspaceSecurity, t.TabSecurity, "🛡️"},
-		{WorkspaceUsers, t.TabUsers, "👥"},
-		{WorkspaceFiles, t.TabFiles, "📂"},
-		{WorkspaceTasks, t.TabTasks, "⚡"},
+		{WorkspaceDashboard, "Desktop & Status", "1"},
+		{WorkspaceApps, "Toko Aplikasi", "2"},
+		{WorkspaceSettings, "Pengaturan Tampilan", "3"},
+		{WorkspaceGuide, "Petunjuk Penggunaan", "4"},
 	}
 
 	var renderedTabs []string
 	for _, tab := range tabs {
-		label := fmt.Sprintf("%s %s", tab.icon, tab.name)
+		label := fmt.Sprintf("[%s] %s", tab.num, tab.name)
 		if tab.ws == active {
-			renderedTabs = append(renderedTabs, styles.ActiveTabStyle.Render(label))
+			renderedTabs = append(renderedTabs, st.ActiveTab.Render(label))
 		} else {
-			renderedTabs = append(renderedTabs, styles.InactiveTabStyle.Render(label))
+			renderedTabs = append(renderedTabs, st.InactiveTab.Render(label))
 		}
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
 	border := strings.Repeat("─", width)
-	return lipgloss.JoinVertical(lipgloss.Left, row, styles.SubtitleStyle.Render(border))
+	return lipgloss.JoinVertical(lipgloss.Left, row, st.Subtitle.Render(border))
 }

@@ -10,47 +10,41 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// RenderTopBar renders the desktop status bar
-func RenderTopBar(info system.HardwareInfo, lang i18n.Language, width int) string {
+// RenderTopBar renders the desktop status bar using active theme styles
+func RenderTopBar(info system.HardwareInfo, st styles.ThemeStyles, lang i18n.Language, width int) string {
 	t := i18n.Get(lang)
 
 	// Left: App Name & Host
-	hostBadge := styles.BadgeStyle.Render("🏝️ " + t.AppTitle)
-	hostInfo := styles.PillNormal.Render(fmt.Sprintf("%s: %s (%s)", t.CurrentHost, info.Hostname, info.Arch))
+	hostBadge := st.Badge.Render("🏝️ " + t.AppTitle)
+	hostInfo := st.Pill.Render(fmt.Sprintf("%s: %s (%s)", t.CurrentHost, info.Hostname, info.Arch))
 
 	// Center: Telemetry Pills
-	// 1. Temperature pill with dynamic color
 	var tempPill string
 	if info.TemperatureC > 70 {
-		tempPill = styles.PillDanger.Render(fmt.Sprintf("🔥 %.1f°C", info.TemperatureC))
+		tempPill = st.PillDanger.Render(fmt.Sprintf("🔥 %.1f°C", info.TemperatureC))
 	} else if info.TemperatureC > 55 {
-		tempPill = styles.PillWarning.Render(fmt.Sprintf("⚠️ %.1f°C", info.TemperatureC))
+		tempPill = st.PillWarning.Render(fmt.Sprintf("⚠️ %.1f°C", info.TemperatureC))
 	} else {
-		tempPill = styles.PillNormal.Render(fmt.Sprintf("❄️ %.1f°C", info.TemperatureC))
+		tempPill = st.Pill.Render(fmt.Sprintf("❄️ %.1f°C", info.TemperatureC))
 	}
 
-	// 2. RAM pill
 	ramText := fmt.Sprintf("RAM: %d/%d MB (%.0f%%)", info.MemUsedMB, info.MemTotalMB, info.MemUsagePct)
 	var ramPill string
 	if info.MemUsagePct > 85 {
-		ramPill = styles.PillDanger.Render(ramText)
+		ramPill = st.PillDanger.Render(ramText)
 	} else if info.MemUsagePct > 70 {
-		ramPill = styles.PillWarning.Render(ramText)
+		ramPill = st.PillWarning.Render(ramText)
 	} else {
-		ramPill = styles.PillNormal.Render(ramText)
+		ramPill = st.Pill.Render(ramText)
 	}
 
-	// 3. CPU / Load
-	cpuPill := styles.PillNormal.Render(fmt.Sprintf("Load: %.2f %.2f", info.Load1, info.Load5))
-
-	// Right: Clock
-	clockPill := styles.PillNormal.Render(time.Now().Format("15:04:05"))
+	cpuPill := st.Pill.Render(fmt.Sprintf("Load: %.2f", info.Load1))
+	clockPill := st.Pill.Render(time.Now().Format("15:04:05"))
 
 	left := lipgloss.JoinHorizontal(lipgloss.Center, hostBadge, " ", hostInfo)
 	center := lipgloss.JoinHorizontal(lipgloss.Center, tempPill, " ", ramPill, " ", cpuPill)
 	right := lipgloss.JoinHorizontal(lipgloss.Center, clockPill)
 
-	// Calculate space distribution
 	totalUsed := lipgloss.Width(left) + lipgloss.Width(center) + lipgloss.Width(right)
 	spacing := (width - totalUsed) / 2
 	if spacing < 1 {
@@ -60,5 +54,5 @@ func RenderTopBar(info system.HardwareInfo, lang i18n.Language, width int) strin
 	spaces := lipgloss.NewStyle().Width(spacing).Render("")
 	barContent := lipgloss.JoinHorizontal(lipgloss.Center, left, spaces, center, spaces, right)
 
-	return styles.TopBarStyle.Width(width).Render(barContent)
+	return st.TopBar.Width(width).Render(barContent)
 }
