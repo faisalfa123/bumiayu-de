@@ -6,7 +6,7 @@
 
 set -e
 
-REPO="bumiayu/bumiayu-de"
+REPO="faisalfa123/bumiayu-de"
 INSTALL_DIR="/usr/local/bin"
 BIN_NAME="bumiayu"
 

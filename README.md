@@ -5,9 +5,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.22%2B-blue.svg)](https://go.dev)
-[![Architecture](https://img.shields.io/badge/Arch-ARM64%20|%20AMD64-cyan.svg)](https://github.com/bumiayu/bumiayu-de)
-[![RAM Footprint](https://img.shields.io/badge/RAM%20Footprint-~12%20MB-success.svg)](https://github.com/bumiayu/bumiayu-de)
-[![SSH Friendly](https://img.shields.io/badge/SSH-100%25%20Friendly-purple.svg)](https://github.com/bumiayu/bumiayu-de)
+[![Architecture](https://img.shields.io/badge/Arch-ARM64%20|%20AMD64-cyan.svg)](https://github.com/faisalfa123/bumiayu-de)
+[![RAM Footprint](https://img.shields.io/badge/RAM%20Footprint-~12%20MB-success.svg)](https://github.com/faisalfa123/bumiayu-de)
+[![SSH Friendly](https://img.shields.io/badge/SSH-100%25%20Friendly-purple.svg)](https://github.com/faisalfa123/bumiayu-de)
 
 ---
 
@@ -55,7 +55,7 @@ Bumiayu TUI membagi pengelolaan sistem ke dalam 7 panel terintegrasi:
 Cukup jalankan satu perintah berikut di terminal Anda:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bumiayu/bumiayu-de/main/scripts/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/faisalfa123/bumiayu-de/main/scripts/install.sh | sudo bash
 ```
 
 Skrip akan secara otomatis mendeteksi apakah mesin Anda adalah **ARM64** (ODROID-C2) atau **AMD64** (x86_64) dan memasang binary yang tepat ke `/usr/local/bin/bumiayu`.
@@ -108,7 +108,7 @@ Jika Anda ingin membangun binary sendiri dari kode sumber:
 
 ```bash
 # Clone repository
-git clone https://github.com/bumiayu/bumiayu-de.git
+git clone https://github.com/faisalfa123/bumiayu-de.git
 cd bumiayu-de
 
 # Jalankan pengujian unit
