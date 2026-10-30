@@ -36,9 +36,9 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	// Header Bar Desktop Elegan (Minimalis WebUI)
 	header := lipgloss.JoinHorizontal(lipgloss.Center,
-		st.Title.Render("🏝️ BUMIAYU DESKTOP"),
-		"  ",
-		st.Subtitle.Render("Pusat Kendali Server Linux & ODROID-C2"),
+		st.Badge.Render("🏝️ BUMIAYU WEBUI"),
+		" ",
+		st.Title.Render("Pusat Kendali Server Linux & ODROID-C2"),
 	)
 
 	// Hardware Telemetry Banner (Lengkap & Profesional)
@@ -145,10 +145,15 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 		if app.Installed {
 			statusText = "🟢 Siap Digunakan"
 			actionBtn = st.PillDanger.Render("🗑️ [X] Hapus")
+			if app.ID == "immich-sbc" {
+				actionBtn = st.ButtonActive.Render("⚡ Buka: sudo immich-sbc-tool") + "  " + st.PillDanger.Render("🗑️ [X] Hapus")
+			}
 		}
 
 		distroInstallMethod := "dietpi-software install " + app.DietPiID
-		if distro == system.DistroArch {
+		if app.ID == "immich-sbc" {
+			distroInstallMethod = "curl -fsSL https://raw.githubusercontent.com/faisalfa123/immich-odroid-c2/main/install.sh | sudo bash"
+		} else if distro == system.DistroArch {
 			distroInstallMethod = "pacman -Sy " + app.ArchPkg
 		} else if distro == system.DistroUbuntu || distro == system.DistroDebian {
 			distroInstallMethod = "apt-get install -y " + app.PackageName

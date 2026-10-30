@@ -16,7 +16,7 @@ func RenderTopBar(info system.HardwareInfo, st styles.ThemeStyles, lang i18n.Lan
 
 	// Left: App Name & Host
 	hostBadge := st.Badge.Render("🏝️ " + t.AppTitle)
-	hostInfo := st.ButtonNormal.Render(fmt.Sprintf("%s: %s (%s)", t.CurrentHost, info.Hostname, info.Arch))
+	hostInfo := lipgloss.NewStyle().Foreground(st.TextColor).Bold(true).Render(fmt.Sprintf("%s (%s)", info.Hostname, info.Arch))
 
 	// Center: Telemetry Pills
 	var tempPill string

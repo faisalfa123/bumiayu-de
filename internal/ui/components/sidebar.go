@@ -38,6 +38,6 @@ func RenderWorkspaceTabs(active Workspace, st styles.ThemeStyles, width int) str
 		}
 	}
 
-	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
-	return row
+	row := lipgloss.JoinHorizontal(lipgloss.Center, renderedTabs...)
+	return lipgloss.NewStyle().MarginBottom(0).Render(row)
 }

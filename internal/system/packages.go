@@ -1,6 +1,7 @@
 package system
 
 import (
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -28,6 +29,19 @@ func GetAppCatalog() []AppCatalogItem {
 	catalog := []AppCatalogItem{
 		// === 1. FOTO & CLOUD STORAGE ===
 		{
+			ID:           "immich-sbc",
+			Name:         "Immich SBC Optimizer (ODROID-C2)",
+			Category:     "Foto & Cloud",
+			Description:  "Toolkit Immich resmi FaisalFa123 untuk SBC & ODROID-C2: auto-backup DB, zero data loss, transcode x265/HEIC/RAW, optimasi RAM low-end, dan auto-rollback.",
+			PackageName:  "immich-sbc-tool",
+			DietPiID:     "215",
+			ArchPkg:      "immich-sbc-tool",
+			Port:         "2283 (Web)",
+			RiskLevel:    "Rendah",
+			Insight:      "Rekomendasi Utama! Dirancang khusus untuk ODROID-C2 (ARM64) 2GB RAM agar Immich berjalan lancar tanpa OOM.",
+			IsThirdParty: true,
+		},
+		{
 			ID:           "immich",
 			Name:         "Immich Photo & Video",
 			Category:     "Foto & Cloud",
@@ -37,7 +51,7 @@ func GetAppCatalog() []AppCatalogItem {
 			ArchPkg:      "immich",
 			Port:         "2283 (Web)",
 			RiskLevel:    "Sedang",
-			Insight:      "Paling dicari saat ini! Di DietPi otomatis terpasang sebagai service native (ID 215). Sediakan swap ~1GB untuk AI.",
+			Insight:      "Di DietPi otomatis terpasang sebagai service native (ID 215). Sediakan swap ~1GB untuk AI.",
 			IsThirdParty: true,
 		},
 		{
@@ -773,7 +787,20 @@ func GetAppCatalog() []AppCatalogItem {
 // checkPackageInstalled checks if package is installed via fast lookup
 func checkPackageInstalled(pkg, id string) bool {
 	if runtime.GOOS != "linux" {
-		return id == "docker" || id == "nginx" || id == "git" || id == "htop" || id == "tailscale" || id == "samba"
+		return id == "docker" || id == "nginx" || id == "git" || id == "htop" || id == "tailscale" || id == "samba" || id == "immich-sbc"
+	}
+
+	// Fast lookup for immich-sbc-tool
+	if id == "immich-sbc" {
+		if _, err := exec.LookPath("immich-sbc-tool"); err == nil {
+			return true
+		}
+		if _, err := os.Stat("/usr/local/bin/immich-sbc-tool"); err == nil {
+			return true
+		}
+		if _, err := os.Stat("/opt/immich-sbc-tool/bin/immich-sbc-tool"); err == nil {
+			return true
+		}
 	}
 
 	// 1. Fast PATH lookup without spawning shell
@@ -831,9 +858,21 @@ func ExecutePackageAction(action string, item AppCatalogItem) (string, error) {
 		}
 	}
 
-	// 3. Verified 3rd-party installers on Ubuntu/Debian/Generic Linux
+	// 3. Verified 3rd-party uninstaller
+	if item.IsThirdParty && action == "uninstall" {
+		if item.ID == "immich-sbc" {
+			cmd := exec.Command("sh", "-c", "rm -rf /opt/immich-sbc-tool /usr/local/bin/immich-sbc-tool /etc/bumiayu/hooks.d/immich.sh")
+			out, err := cmd.CombinedOutput()
+			return string(out), err
+		}
+	}
 	if item.IsThirdParty && action == "install" {
 		switch item.ID {
+		case "immich-sbc":
+			// Official immich-odroid-c2 optimizer and manager installer
+			cmd := exec.Command("sh", "-c", "curl -fsSL https://raw.githubusercontent.com/faisalfa123/immich-odroid-c2/main/install.sh | sudo bash")
+			out, err := cmd.CombinedOutput()
+			return string(out), err
 		case "immich":
 			// If not on DietPi, deploy Immich official docker compose stack
 			cmd := exec.Command("sh", "-c", "mkdir -p /opt/immich-app && cd /opt/immich-app && wget -O docker-compose.yml https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml && wget -O .env https://github.com/immich-app/immich/releases/latest/download/example.env && docker compose up -d")

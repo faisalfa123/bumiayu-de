@@ -31,12 +31,13 @@ func RenderGuide(st styles.ThemeStyles, width, height int) string {
 	)
 
 	// Card 2: Install & Uninstall Aplikasi
-	appText := `• Masuk ke tab [2] Toko Aplikasi.
-• Pilih aplikasi (Docker, Nginx, WireGuard, Samba, dll).
+	appText := `• Masuk ke tab [1] Desktop & Aplikasi.
+• Tersedia Immich SBC Optimizer resmi (ODROID-C2 & Server) terintegrasi!
+• Pilih aplikasi (Immich, Docker, Nginx, WireGuard, Samba, dll).
 • Tekan [Enter] atau [I] untuk Memasang (Install).
 • Tekan [X] untuk Menghapus (Uninstall).
 • Jendela konfirmasi akan muncul. Tekan [Y] untuk Ya atau [N] untuk Batal.
-• Proses instalasi dan log akan tampil secara transparan.`
+• Tool Immich SBC dapat dibuka langsung dengan: sudo immich-sbc-tool.`
 
 	appCard := st.Card.Width(contentWidth/2 - 2).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
