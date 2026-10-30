@@ -51,6 +51,7 @@ type Model struct {
 	SettingsCursor int
 	ShowImageInput bool
 	ImageInputPath string
+	AnimFrame      int
 
 	// First-run OOBE Wizard & Recovery State
 	Wizard views.WizardState
@@ -130,7 +131,7 @@ func (m *Model) refreshAllData() {
 }
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second*2, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Millisecond*600, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
 }
@@ -149,7 +150,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case TickMsg:
-		m.Hardware = system.GetHardwareInfo()
+		m.AnimFrame++
+		if m.AnimFrame%3 == 0 {
+			m.Hardware = system.GetHardwareInfo()
+		}
 		return m, tickCmd()
 
 	case AppActionMsg:
@@ -525,7 +529,7 @@ func (m *Model) applySettingSelection() {
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.7",
+		ConfigVersion:     "v0.9.0-beta.8",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}
@@ -626,7 +630,7 @@ func (m Model) View() string {
 	var currentView string
 	switch m.ActiveWorkspace {
 	case components.WorkspaceDashboard:
-		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.ActiveCategory, m.AppDialog, m.WMMode, m.WallpaperType, m.WallpaperPreset, st, m.Language, width, height)
+		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.ActiveCategory, m.AnimFrame, m.AppDialog, m.WMMode, m.WallpaperType, m.WallpaperPreset, st, m.Language, width, height)
 	case components.WorkspaceSettings:
 		currentView = views.RenderSettings(m.ThemeMode, m.WMMode, m.WallpaperType, m.WallpaperPreset, m.SettingsCursor, m.ImageInputPath, st, width, height)
 	case components.WorkspaceGuide:

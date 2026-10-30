@@ -770,37 +770,17 @@ func GetAppCatalog() []AppCatalogItem {
 	return catalog
 }
 
-// checkPackageInstalled checks if package is installed in Debian/Ubuntu, DietPi, or binary PATH
+// checkPackageInstalled checks if package is installed via fast lookup
 func checkPackageInstalled(pkg, id string) bool {
 	if runtime.GOOS != "linux" {
-		return id == "docker" || id == "nginx" || id == "git" || id == "htop" || id == "tailscale"
+		return id == "docker" || id == "nginx" || id == "git" || id == "htop" || id == "tailscale" || id == "samba"
 	}
 
-	// 1. Check binary path
+	// 1. Fast PATH lookup without spawning shell
 	binaries := []string{pkg, id}
 	for _, b := range binaries {
 		if _, err := exec.LookPath(b); err == nil {
 			return true
-		}
-	}
-
-	// 2. Check dpkg-query
-	cmd := exec.Command("dpkg-query", "-W", "-f=${Status}", pkg)
-	out, err := cmd.Output()
-	if err == nil && strings.Contains(string(out), "install ok installed") {
-		return true
-	}
-
-	// 3. Check DietPi installed list
-	if DetectDistro() == DistroDietPi {
-		dietpiCmd := exec.Command("dietpi-software", "list")
-		if dOut, dErr := dietpiCmd.Output(); dErr == nil {
-			lines := strings.Split(string(dOut), "\n")
-			for _, l := range lines {
-				if strings.Contains(l, "| =1 |") && strings.Contains(strings.ToLower(l), strings.ToLower(id)) {
-					return true
-				}
-			}
 		}
 	}
 

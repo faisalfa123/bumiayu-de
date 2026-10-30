@@ -31,6 +31,60 @@ const (
 	SceneMalamBintang                    // 🌌 Langit Malam Berbintang
 )
 
+// GetAnimatedPaddyFarmer returns animated pixel art of farmers in Bumiayu rice paddy
+func GetAnimatedPaddyFarmer(frame int) string {
+	f := frame % 4
+	switch f {
+	case 0:
+		// Frame 0: Petani mengangkat cangkul ke atas
+		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m             (o_  \x1b[38;2;251;191;36m__/\x1b[0m                 \x1b[38;2;254;240;138m(o_  \x1b[38;2;251;191;36m__/\x1b[0m       \x1b[38;2;253;224;71m☁️  Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m             /|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m               \x1b[38;2;251;146;60m/|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m     \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m             / \\                    \x1b[38;2;217;119;6m/ \\\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m  ░░ 🌾 Petani Bumiayu Mengayunkan Cangkul Mengolah Tanah Subur 🌾 ░░\x1b[0m"
+
+	case 1:
+		// Frame 1: Cangkul menancap ke tanah sawah (Mencangkul)
+		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m             (o_                       (o_            \x1b[38;2;253;224;71m☁️   Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m             /|\\_                      /|\\_           \x1b[38;2;250;204;21m☀️   Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m             / \\ \x1b[38;2;180;83;9m\\                       / \\ \x1b[38;2;180;83;9m\\\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m,,, ,,,,, ,,,,, ,,,,, ,,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m  ░░ 🌾 Cangkul Menancap Kokoh — Semangat Petani Menjaga Pangan 🌾 ░░\x1b[0m"
+
+	case 2:
+		// Frame 2: Petani melangkah menyusuri pematang sawah
+		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m                (o_                       (o_         \x1b[38;2;253;224;71m☁️    Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m               --|--\x1b[38;2;180;83;9m/                     --|--\x1b[38;2;180;83;9m/        \x1b[38;2;250;204;21m☀️   Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m                / > \x1b[38;2;202;138;4m[===|                  / > \x1b[38;2;202;138;4m[===|\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m  ░░ 🌾 Berjalan di Pematang Hijau Menatap Gunung Slamet Megah 🌾 ░░\x1b[0m"
+
+	default:
+		// Frame 3: Mengibaskan padi dan istirahat sejenak
+		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m                  (o_                       (o_       \x1b[38;2;253;224;71m☁️   Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m                 <|\\                       <|\\        \x1b[38;2;250;204;21m☀️   Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m                 < \\  \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|                 < \\  \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m  ░░ 🌾 Bulir Padi Menguning, Angin Semilir Menyejukkan Server 🌾 ░░\x1b[0m"
+	}
+}
+
 // GetCurrentWallpaper returns the active wallpaper string based on type and time
 func GetCurrentWallpaper(wpType WallpaperType, preset PresetScene) string {
 	switch wpType {

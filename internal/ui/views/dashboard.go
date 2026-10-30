@@ -23,7 +23,7 @@ var CategoryFilterList = []string{
 }
 
 // RenderDashboard renders the All-in-One Desktop Launcher with live wallpaper art & direct app actions
-func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, selectedApp int, activeCategory int, dialog AppDialogState, wm WMMode, wpType wallpaper.WallpaperType, wpPreset wallpaper.PresetScene, st styles.ThemeStyles, lang i18n.Language, width, height int) string {
+func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, selectedApp int, activeCategory int, animFrame int, dialog AppDialogState, wm WMMode, wpType wallpaper.WallpaperType, wpPreset wallpaper.PresetScene, st styles.ThemeStyles, lang i18n.Language, width, height int) string {
 	contentWidth := width - 6
 	if contentWidth < 50 {
 		contentWidth = 50
@@ -172,13 +172,13 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	mainRow := lipgloss.JoinHorizontal(lipgloss.Top, listPanel, "  ", detailPanel)
 
-	// Mini Wallpaper Artwork Banner at Bottom
-	activeArtwork := wallpaper.GetCurrentWallpaper(wpType, wpPreset)
+	// Animated Pixel Art Artwork Banner at Bottom
+	activeArtwork := wallpaper.GetAnimatedPaddyFarmer(animFrame)
 	artBanner := st.Card.Width(contentWidth).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
 			activeArtwork,
 			"",
-			st.RowNormal.Render("⌨️ Navigasi: [Tab/Shift+Tab] Ganti Kategori | [↑/↓] Pilih App | [Enter/I] Pasang | [X] Hapus | [1-3] Tab | [T] Tema | [M] WM | [W] Setup | [q] Keluar"),
+			st.RowNormal.Render("⌨️ Navigasi: [Tab/Shift+Tab] Kategori | [↑/↓] Pilih App | [Enter/I] Pasang | [X] Hapus | [1-3] Tab | [T] Tema | [M] WM | [W] Setup | [q] Keluar"),
 		),
 	)
 

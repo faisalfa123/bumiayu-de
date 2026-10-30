@@ -99,8 +99,6 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 		Background(ts.PrimaryColor)
 
 	ts.Pill = lipgloss.NewStyle().
-		Foreground(ts.TextColor).
-		Background(ts.BgColor).
 		Padding(0, 1)
 
 	ts.PillWarning = lipgloss.NewStyle().
@@ -123,7 +121,6 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 
 	ts.InactiveTab = lipgloss.NewStyle().
 		Foreground(ts.MutedColor).
-		Background(ts.CardBg).
 		Padding(0, 2)
 
 	ts.Card = lipgloss.NewStyle().
@@ -162,8 +159,6 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 		Padding(0, 2)
 
 	ts.ButtonNormal = lipgloss.NewStyle().
-		Foreground(ts.TextColor).
-		Background(ts.BgColor).
 		Border(lipgloss.NormalBorder()).
 		BorderForeground(ts.BorderColor).
 		Padding(0, 1)

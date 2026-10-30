@@ -16,7 +16,7 @@ func RenderTopBar(info system.HardwareInfo, st styles.ThemeStyles, lang i18n.Lan
 
 	// Left: App Name & Host
 	hostBadge := st.Badge.Render("🏝️ " + t.AppTitle)
-	hostInfo := st.Pill.Render(fmt.Sprintf("%s: %s (%s)", t.CurrentHost, info.Hostname, info.Arch))
+	hostInfo := st.ButtonNormal.Render(fmt.Sprintf("%s: %s (%s)", t.CurrentHost, info.Hostname, info.Arch))
 
 	// Center: Telemetry Pills
 	var tempPill string
@@ -25,7 +25,7 @@ func RenderTopBar(info system.HardwareInfo, st styles.ThemeStyles, lang i18n.Lan
 	} else if info.TemperatureC > 55 {
 		tempPill = st.PillWarning.Render(fmt.Sprintf("⚠️ %.1f°C", info.TemperatureC))
 	} else {
-		tempPill = st.Pill.Render(fmt.Sprintf("❄️ %.1f°C", info.TemperatureC))
+		tempPill = st.ButtonNormal.Render(fmt.Sprintf("❄️ %.1f°C", info.TemperatureC))
 	}
 
 	ramText := fmt.Sprintf("RAM: %d/%d MB (%.0f%%)", info.MemUsedMB, info.MemTotalMB, info.MemUsagePct)
@@ -35,11 +35,11 @@ func RenderTopBar(info system.HardwareInfo, st styles.ThemeStyles, lang i18n.Lan
 	} else if info.MemUsagePct > 70 {
 		ramPill = st.PillWarning.Render(ramText)
 	} else {
-		ramPill = st.Pill.Render(ramText)
+		ramPill = st.ButtonNormal.Render(ramText)
 	}
 
-	cpuPill := st.Pill.Render(fmt.Sprintf("Load: %.2f", info.Load1))
-	clockPill := st.Pill.Render(time.Now().Format("15:04:05"))
+	cpuPill := st.ButtonNormal.Render(fmt.Sprintf("Load: %.2f", info.Load1))
+	clockPill := st.ButtonNormal.Render(time.Now().Format("15:04:05"))
 
 	left := lipgloss.JoinHorizontal(lipgloss.Center, hostBadge, " ", hostInfo)
 	center := lipgloss.JoinHorizontal(lipgloss.Center, tempPill, " ", ramPill, " ", cpuPill)
