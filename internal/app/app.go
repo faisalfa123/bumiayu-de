@@ -55,7 +55,20 @@ type Model struct {
 
 	// First-run OOBE Wizard & Recovery State
 	Wizard views.WizardState
+
+	// Screen Navigation Modes (WebUI Experience)
+	CurrentScreen         ScreenMode
+	AlexisCursor          int
+	CommerceSidebarCursor int
 }
+
+// ScreenMode defines whether we are on Alexis Grid Launcher or Commerce Dashboard
+type ScreenMode int
+
+const (
+	ScreenAlexisGrid ScreenMode = iota
+	ScreenCommerceDashboard
+)
 
 // InitialModel initializes the state with config or opens wizard if first run
 func InitialModel() Model {
@@ -211,7 +224,153 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleAppModalKeys(key)
 		}
 
-		// 4. GLOBAL DESKTOP SHORTCUTS
+		// 4. SCREEN MODE NAVIGATION (Alexis Icons vs Commerce Dashboard)
+		if m.CurrentScreen == ScreenAlexisGrid {
+			switch key {
+			case "ctrl+c", "q":
+				return m, tea.Quit
+			case "up", "k":
+				if m.AlexisCursor >= 4 {
+					m.AlexisCursor -= 4
+				}
+				return m, nil
+			case "down", "j":
+				if m.AlexisCursor < 4 {
+					m.AlexisCursor += 4
+				}
+				return m, nil
+			case "left", "h":
+				if m.AlexisCursor%4 > 0 {
+					m.AlexisCursor--
+				}
+				return m, nil
+			case "right", "l":
+				if m.AlexisCursor%4 < 3 {
+					m.AlexisCursor++
+				}
+				return m, nil
+			case "enter", " ":
+				// Enter opens Commerce Dashboard with relevant section
+				m.CurrentScreen = ScreenCommerceDashboard
+				switch m.AlexisCursor {
+				case 0: // Dasbor Utama
+					m.CommerceSidebarCursor = 0
+				case 1: // Toko Aplikasi
+					m.CommerceSidebarCursor = 1
+				case 2: // Immich SBC
+					m.CommerceSidebarCursor = 2
+				case 3: // Penyimpanan
+					m.CommerceSidebarCursor = 3
+				case 4: // Jaringan
+					m.CommerceSidebarCursor = 4
+				case 5: // Keamanan
+					m.CommerceSidebarCursor = 5
+				case 6: // Pengaturan
+					m.CommerceSidebarCursor = 7
+				case 7: // Panduan
+					m.CommerceSidebarCursor = 0
+				}
+				return m, nil
+			case "t", "T":
+				m.ThemeMode = (m.ThemeMode + 1) % 3
+				return m, nil
+			}
+			return m, nil
+		}
+
+		// When on ScreenCommerceDashboard:
+		if m.CurrentScreen == ScreenCommerceDashboard {
+			switch key {
+			case "esc", "backspace":
+				m.CurrentScreen = ScreenAlexisGrid
+				return m, nil
+			case "ctrl+c", "q":
+				return m, tea.Quit
+			case "up", "k":
+				if m.CommerceSidebarCursor > 0 {
+					m.CommerceSidebarCursor--
+				}
+				return m, nil
+			case "down", "j":
+				if m.CommerceSidebarCursor < 7 {
+					m.CommerceSidebarCursor++
+				}
+				return m, nil
+			case "left", "h":
+				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi
+					if m.ActiveCategory > 0 {
+						m.ActiveCategory--
+					} else {
+						m.ActiveCategory = len(views.CategoryFilterList) - 1
+					}
+					m.CatalogCursor = 0
+				}
+				return m, nil
+			case "right", "l":
+				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi
+					m.ActiveCategory = (m.ActiveCategory + 1) % len(views.CategoryFilterList)
+					m.CatalogCursor = 0
+				}
+				return m, nil
+			case "tab":
+				if m.CommerceSidebarCursor == 1 {
+					m.CatalogCursor = (m.CatalogCursor + 1) % len(m.getFilteredCatalog())
+				}
+				return m, nil
+			case "enter", "i", "I":
+				if m.CommerceSidebarCursor == 2 {
+					// Quick install/manage Immich
+					for _, item := range m.Catalog {
+						if item.ID == "immich-sbc" {
+							action := "install"
+							if item.Installed {
+								action = "uninstall"
+							}
+							m.AppDialog = views.AppDialogState{
+								Active: true,
+								Action: action,
+								App:    item,
+							}
+							break
+						}
+					}
+					return m, nil
+				}
+				if m.CommerceSidebarCursor == 1 {
+					filtered := m.getFilteredCatalog()
+					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
+						selected := filtered[m.CatalogCursor]
+						action := "install"
+						if selected.Installed {
+							action = "uninstall"
+						}
+						m.AppDialog = views.AppDialogState{
+							Active: true,
+							Action: action,
+							App:    selected,
+						}
+					}
+					return m, nil
+				}
+			case "x", "X":
+				if m.CommerceSidebarCursor == 1 {
+					filtered := m.getFilteredCatalog()
+					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
+						selected := filtered[m.CatalogCursor]
+						if selected.Installed {
+							m.AppDialog = views.AppDialogState{
+								Active: true,
+								Action: "uninstall",
+								App:    selected,
+							}
+						}
+					}
+					return m, nil
+				}
+			}
+		}
+
+		// 5. GLOBAL DESKTOP SHORTCUTS (Fallback / Direct)
 		switch key {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -622,6 +781,36 @@ func (m Model) View() string {
 	// If Wizard is active, render centered Setup Wizard
 	if m.Wizard.Active {
 		return views.RenderWizard(m.Wizard, st, width, height)
+	}
+
+	// WEB UI SCREEN MODE RENDERING
+	if m.CurrentScreen == ScreenAlexisGrid {
+		content := views.RenderAlexisGrid(m.AlexisCursor, m.AnimFrame, st, width, height)
+		lines := strings.Split(content, "\n")
+		if len(lines) > height {
+			lines = lines[:height]
+		}
+		return strings.Join(lines, "\n")
+	}
+
+	if m.CurrentScreen == ScreenCommerceDashboard {
+		content := views.RenderCommerceDashboard(
+			m.Hardware,
+			m.Catalog,
+			m.CommerceSidebarCursor,
+			m.CatalogCursor,
+			m.ActiveCategory,
+			m.AnimFrame,
+			m.AppDialog,
+			st,
+			width,
+			height,
+		)
+		lines := strings.Split(content, "\n")
+		if len(lines) > height {
+			lines = lines[:height]
+		}
+		return strings.Join(lines, "\n")
 	}
 
 	// 1. Top Desktop Bar
