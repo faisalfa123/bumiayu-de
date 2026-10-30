@@ -75,7 +75,7 @@ if [ -z "$LATEST_TAG" ]; then
 fi
 
 if [ -z "$LATEST_TAG" ]; then
-  LATEST_TAG="v0.9.0-beta.11"
+  LATEST_TAG="v0.9.0-beta.12"
   echo -e "${YELLOW}Menggunakan versi default: ${LATEST_TAG}${NC}"
 else
   echo -e "🚀 Versi ditemukan: ${GREEN}${LATEST_TAG}${NC}"

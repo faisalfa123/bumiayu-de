@@ -18,7 +18,7 @@ const (
 
 // RenderSettings renders the customization panel with Wallpaper, Theme, and WM settings
 func RenderSettings(currentTheme styles.ThemeMode, currentWM WMMode, wpType wallpaper.WallpaperType, wpPreset wallpaper.PresetScene, selectedRow int, imageInput string, st styles.ThemeStyles, width, height int) string {
-	contentWidth := width - 6
+	contentWidth := width - 4
 	if contentWidth < 50 {
 		contentWidth = 50
 	}

@@ -131,14 +131,15 @@ func (m *Model) refreshAllData() {
 }
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Millisecond*450, func(t time.Time) tea.Msg {
+	// 24 FPS = 1000ms / 24 ≈ 41.6ms
+	return tea.Tick(time.Millisecond*42, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
 }
 
-// Init starts the Bubble Tea loop with clear alternate screen
+// Init starts the Bubble Tea loop with smooth 24fps tick
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(tea.ClearScreen, tickCmd())
+	return tickCmd()
 }
 
 // Update handles keyboard and window events
@@ -151,7 +152,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TickMsg:
 		m.AnimFrame++
-		if m.AnimFrame%3 == 0 {
+		// Polling hardware setiap ~1.5 detik (36 frame @ 24fps) agar CPU hemat daya
+		if m.AnimFrame%36 == 0 {
 			m.Hardware = system.GetHardwareInfo()
 		}
 		return m, tickCmd()
@@ -256,13 +258,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Direct Tab Switching via numbers 1 - 3
 		case "1":
 			m.ActiveWorkspace = components.WorkspaceDashboard
-			return m, tea.Batch(tea.ClearScreen, tickCmd())
+			return m, nil
 		case "2":
 			m.ActiveWorkspace = components.WorkspaceSettings
-			return m, tea.Batch(tea.ClearScreen, tickCmd())
+			return m, nil
 		case "3":
 			m.ActiveWorkspace = components.WorkspaceGuide
-			return m, tea.Batch(tea.ClearScreen, tickCmd())
+			return m, nil
 
 		// Dynamic Arrow Tab Switching (Left / Right)
 		case "left", "h":
@@ -271,11 +273,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.ActiveWorkspace = components.WorkspaceGuide
 			}
-			return m, tea.Batch(tea.ClearScreen, tickCmd())
+			return m, nil
 
 		case "right", "l":
 			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
-			return m, tea.Batch(tea.ClearScreen, tickCmd())
+			return m, nil
 
 		case "tab":
 			if m.ActiveWorkspace == components.WorkspaceDashboard {
@@ -283,7 +285,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.CatalogCursor = 0
 			} else {
 				m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
-				return m, tea.Batch(tea.ClearScreen, tickCmd())
+				return m, nil
 			}
 			return m, nil
 
@@ -301,7 +303,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					m.ActiveWorkspace = components.WorkspaceGuide
 				}
-				return m, tea.Batch(tea.ClearScreen, tickCmd())
+				return m, nil
 			}
 			return m, nil
 
@@ -531,7 +533,7 @@ func (m *Model) applySettingSelection() {
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.11",
+		ConfigVersion:     "v0.9.0-beta.12",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}
@@ -642,12 +644,17 @@ func (m Model) View() string {
 	// 4. Status Bar
 	statusBar := components.RenderStatusBar(st, width, m.StatusMessage)
 
-	return lipgloss.JoinVertical(lipgloss.Left,
+	fullContent := lipgloss.JoinVertical(lipgloss.Left,
 		topBar,
 		workspaceTabs,
-		"",
 		currentView,
-		"",
 		statusBar,
 	)
+
+	// Clamp to terminal height so no scrolling occurs inside alternate screen
+	lines := strings.Split(fullContent, "\n")
+	if len(lines) > height {
+		lines = lines[:height]
+	}
+	return strings.Join(lines, "\n")
 }

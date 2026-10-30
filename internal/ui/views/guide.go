@@ -7,7 +7,7 @@ import (
 
 // RenderGuide renders user manual, update instructions, and uninstaller guide
 func RenderGuide(st styles.ThemeStyles, width, height int) string {
-	contentWidth := width - 6
+	contentWidth := width - 4
 	if contentWidth < 50 {
 		contentWidth = 50
 	}

@@ -48,44 +48,44 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 
 	switch mode {
 	case ThemeLight:
-		// Tampilan Terang Bersih & Elegan
-		ts.BgColor = lipgloss.Color("#F8FAFC")      // Slate 50
+		// WebUI Light Theme (Bersih, Kontras Lembut, Card Modern)
+		ts.BgColor = lipgloss.Color("#F1F5F9")      // Slate 100
 		ts.CardBg = lipgloss.Color("#FFFFFF")       // Pure White
 		ts.TextColor = lipgloss.Color("#0F172A")    // Slate 900
 		ts.MutedColor = lipgloss.Color("#64748B")   // Slate 500
-		ts.PrimaryColor = lipgloss.Color("#0D9488") // Teal 600
-		ts.AccentColor = lipgloss.Color("#2563EB")  // Royal Blue
+		ts.PrimaryColor = lipgloss.Color("#0284C7") // Sky 600
+		ts.AccentColor = lipgloss.Color("#3B82F6")  // Blue 500
 		ts.BorderColor = lipgloss.Color("#CBD5E1")  // Slate 300
-		ts.DangerColor = lipgloss.Color("#DC2626")  // Red 600
-		ts.SuccessColor = lipgloss.Color("#16A34A") // Green 600
+		ts.DangerColor = lipgloss.Color("#EF4444")  // Red 500
+		ts.SuccessColor = lipgloss.Color("#10B981") // Emerald 500
 
 	case ThemeWarm:
-		// Tampilan Hangat & Lembut di Mata
+		// WebUI Warm Cream (Elegan & Nyaman di Mata)
 		ts.BgColor = lipgloss.Color("#FEFCE8")      // Warm Cream
 		ts.CardBg = lipgloss.Color("#FFFDF5")       // Soft Ivory
 		ts.TextColor = lipgloss.Color("#292524")    // Stone 800
 		ts.MutedColor = lipgloss.Color("#78716C")   // Stone 500
 		ts.PrimaryColor = lipgloss.Color("#D97706") // Amber 600
 		ts.AccentColor = lipgloss.Color("#059669")  // Emerald
-		ts.BorderColor = lipgloss.Color("#E7E5E4")  // Stone 300
+		ts.BorderColor = lipgloss.Color("#D6D3D1")  // Stone 300
 		ts.DangerColor = lipgloss.Color("#E11D48")  // Rose 600
 		ts.SuccessColor = lipgloss.Color("#15803D") // Forest Green
 
 	case ThemeDark:
-		// Tampilan Gelap (Midnight Blue)
-		ts.BgColor = lipgloss.Color("#0F172A")      // Dark Slate
-		ts.CardBg = lipgloss.Color("#1E293B")       // Slate Card
+		// Modern Dashboard Dark Mode (Layaknya Vercel / Pro Dashboard)
+		ts.BgColor = lipgloss.Color("#0B0F17")      // Deep Space / Obsidian
+		ts.CardBg = lipgloss.Color("#161D2B")       // Dark Slate Card
 		ts.TextColor = lipgloss.Color("#F8FAFC")    // Crisp White
 		ts.MutedColor = lipgloss.Color("#94A3B8")   // Slate Gray
-		ts.PrimaryColor = lipgloss.Color("#10B981") // Jade Green
-		ts.AccentColor = lipgloss.Color("#06B6D4")  // Cyan
-		ts.BorderColor = lipgloss.Color("#334155")  // Slate Border
-		ts.DangerColor = lipgloss.Color("#EF4444")  // Coral Red
+		ts.PrimaryColor = lipgloss.Color("#10B981") // Jade Green / Emerald
+		ts.AccentColor = lipgloss.Color("#38BDF8")  // Sky Blue
+		ts.BorderColor = lipgloss.Color("#1E293B")  // Dark Border
+		ts.DangerColor = lipgloss.Color("#F43F5E")  // Rose Red
 		ts.SuccessColor = lipgloss.Color("#22C55E") // Bright Green
 	}
 
 	ts.Title = lipgloss.NewStyle().Bold(true).Foreground(ts.PrimaryColor)
-	ts.Subtitle = lipgloss.NewStyle().Foreground(ts.MutedColor).Italic(true)
+	ts.Subtitle = lipgloss.NewStyle().Foreground(ts.MutedColor)
 
 	ts.TopBar = lipgloss.NewStyle().
 		Padding(0, 1).
@@ -117,24 +117,24 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 		Bold(true).
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Background(ts.PrimaryColor).
-		Padding(0, 1)
+		Padding(0, 2)
 
 	ts.InactiveTab = lipgloss.NewStyle().
 		Foreground(ts.MutedColor).
-		Padding(0, 1)
+		Padding(0, 2)
 
 	ts.Card = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(ts.BorderColor).
-		Padding(1, 2)
+		Padding(0, 1)
 
 	ts.CardActive = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(ts.PrimaryColor).
-		Padding(1, 2)
+		Padding(0, 1)
 
 	ts.Modal = lipgloss.NewStyle().
-		Border(lipgloss.ThickBorder()).
+		Border(lipgloss.RoundedBorder()).
 		BorderForeground(ts.PrimaryColor).
 		Padding(1, 2)
 

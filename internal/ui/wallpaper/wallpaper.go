@@ -31,9 +31,10 @@ const (
 	SceneMalamBintang                    // 🌌 Langit Malam Berbintang
 )
 
-// GetAnimatedPaddyFarmer returns rich 6-frame animated pixel art of farmers in Bumiayu rice paddy
+// GetAnimatedPaddyFarmer returns rich animated pixel art of farmers in Bumiayu rice paddy
+// Smooth frame interpolation: transitions every 12 ticks (~500ms @ 24fps) to prevent jittery flickering
 func GetAnimatedPaddyFarmer(frame int) string {
-	f := frame % 6
+	f := (frame / 12) % 6
 	switch f {
 	case 0:
 		// Frame 0: Petani 1 bersiap, Kerbau membajak sawah di sisi kanan

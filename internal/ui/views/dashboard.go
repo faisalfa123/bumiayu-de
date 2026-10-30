@@ -24,7 +24,7 @@ var CategoryFilterList = []string{
 
 // RenderDashboard renders the All-in-One Desktop Launcher with live wallpaper art & direct app actions
 func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, selectedApp int, activeCategory int, animFrame int, dialog AppDialogState, wm WMMode, wpType wallpaper.WallpaperType, wpPreset wallpaper.PresetScene, st styles.ThemeStyles, lang i18n.Language, width, height int) string {
-	contentWidth := width - 6
+	contentWidth := width - 4
 	if contentWidth < 50 {
 		contentWidth = 50
 	}
@@ -34,55 +34,54 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 		return renderAppModal(dialog, st, contentWidth)
 	}
 
-	// Header Bar Desktop Elegan
-	header := st.Title.Render("🏝️ BUMIAYU DESKTOP ENVIRONMENT")
-	sub := st.Subtitle.Render("Pusat Kendali Modern Berbasis TUI Ringan untuk ODROID-C2 & Server Linux")
+	// Header Bar Desktop Elegan (Minimalis WebUI)
+	header := lipgloss.JoinHorizontal(lipgloss.Center,
+		st.Title.Render("🏝️ BUMIAYU DESKTOP"),
+		"  ",
+		st.Subtitle.Render("Pusat Kendali Server Linux & ODROID-C2"),
+	)
 
 	// Hardware Telemetry Banner (Lengkap & Profesional)
 	deviceType := "Linux Server (" + info.Arch + ")"
 	if info.IsOdroidC2 {
-		deviceType = "ODROID-C2 (Amlogic S905 Quad-Core ARM64)"
+		deviceType = "ODROID-C2 (Amlogic Quad-Core)"
 	}
-	ramBar := system.GetMemoryBar(info.MemUsagePct, 14)
+	ramBar := system.GetMemoryBar(info.MemUsagePct, 10)
 
-	healthBadge := st.Badge.Render("🟢 Normal & Sehat")
+	healthBadge := st.Badge.Render("🟢 Normal")
 	if info.MemUsagePct > 80 || info.TemperatureC > 70 {
-		healthBadge = st.PillDanger.Render("🔴 Beban Tinggi!")
+		healthBadge = st.PillDanger.Render("🔴 Beban Tinggi")
 	}
 
 	distro := system.DetectDistro()
-	sysCol1 := fmt.Sprintf("💻 Perangkat: %s [%s]\n🌐 Hostname : %s | Uptime: %s", deviceType, distro, info.Hostname, info.UptimeStr)
-	sysCol2 := fmt.Sprintf("🌡️ Suhu CPU: %.1f°C | Load Avg: %.2f, %.2f, %.2f\n📊 Status  : %s", info.TemperatureC, info.Load1, info.Load5, info.Load15, healthBadge)
-	sysCol3 := fmt.Sprintf("🧠 RAM : %d/%d MB (%s %.1f%%)\n💾 Swap: %d/%d MB (%.1f%%)", info.MemUsedMB, info.MemTotalMB, ramBar, info.MemUsagePct, info.SwapUsedMB, info.SwapTotalMB, info.SwapUsagePct)
+	sysCol1 := fmt.Sprintf("💻 Perangkat: %s\n🌐 Hostname : %s | Distro: %s", deviceType, info.Hostname, distro)
+	sysCol2 := fmt.Sprintf("🌡️ Suhu CPU: %.1f°C | Load: %.2f\n📊 Status  : %s", info.TemperatureC, info.Load1, healthBadge)
+	sysCol3 := fmt.Sprintf("🧠 RAM : %d/%d MB (%s %.0f%%)\n💾 Swap: %d/%d MB", info.MemUsedMB, info.MemTotalMB, ramBar, info.MemUsagePct, info.SwapUsedMB, info.SwapTotalMB)
 
 	colW := (contentWidth - 6) / 3
 	infoBanner := st.Card.Width(contentWidth).Render(
-		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render("📊 MONITORING SISTEM & PERANGKAT KERAS REAL-TIME:"),
-			"",
-			lipgloss.JoinHorizontal(lipgloss.Top,
-				lipgloss.NewStyle().Width(colW).Render(sysCol1),
-				"  ",
-				lipgloss.NewStyle().Width(colW).Render(sysCol2),
-				"  ",
-				lipgloss.NewStyle().Width(colW).Render(sysCol3),
-			),
+		lipgloss.JoinHorizontal(lipgloss.Top,
+			lipgloss.NewStyle().Width(colW).Render(sysCol1),
+			"  ",
+			lipgloss.NewStyle().Width(colW).Render(sysCol2),
+			"  ",
+			lipgloss.NewStyle().Width(colW).Render(sysCol3),
 		),
 	)
 
-	// Category Filter Pill Bar (Desain Bersih & Elegan)
+	// Category Filter Pill Bar (Desain Bersih & Elegan WebUI)
 	var filterPills []string
 	for idx, cat := range CategoryFilterList {
 		if idx == activeCategory {
-			filterPills = append(filterPills, st.ButtonActive.Render(fmt.Sprintf("[%s]", cat)))
+			filterPills = append(filterPills, st.ButtonActive.Render(cat))
 		} else {
-			filterPills = append(filterPills, st.ButtonNormal.Render(fmt.Sprintf(" %s ", cat)))
+			filterPills = append(filterPills, st.ButtonNormal.Render(cat))
 		}
 	}
 	filterBar := lipgloss.JoinHorizontal(lipgloss.Center, filterPills...)
 	filterContainer := st.Card.Width(contentWidth).Render(
-		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render("📂 Filter Kategori:"),
+		lipgloss.JoinHorizontal(lipgloss.Center,
+			st.Title.Render("📂 Filter: "),
 			filterBar,
 		),
 	)
@@ -109,7 +108,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 			badge = st.Badge.Render("🟢 Terpasang")
 		}
 
-		line := fmt.Sprintf("%-22s  %-16s  %s", app.Name, "["+app.Category+"]", badge)
+		line := fmt.Sprintf("%-20s  %-15s  %s", app.Name, "["+app.Category+"]", badge)
 		if i == selectedApp {
 			listItems = append(listItems, st.RowSelected.Width(contentWidth/2-4).Render("▶ "+line))
 		} else {
@@ -118,7 +117,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 	}
 
 	// Limit visible app items to terminal height with smooth scrolling
-	maxVisible := 12
+	maxVisible := 6
 	startIdx := 0
 	if selectedApp >= maxVisible {
 		startIdx = selectedApp - maxVisible + 1
@@ -131,8 +130,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	listPanel := st.Card.Width(contentWidth/2 - 2).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render(fmt.Sprintf("📦 Katalog Aplikasi Server (%d/%d Aktif):", len(filteredCatalog), len(catalog))),
-			st.Subtitle.Render("Gunakan [↑ / ↓] pilih, [Enter/I] pasang, [X] hapus"),
+			st.Title.Render(fmt.Sprintf("📦 Katalog Server (%d/%d):", len(filteredCatalog), len(catalog))),
 			"",
 			strings.Join(visibleList, "\n"),
 		),
@@ -142,11 +140,11 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 	var detailPanel string
 	if selectedApp >= 0 && selectedApp < len(filteredCatalog) {
 		app := filteredCatalog[selectedApp].Item
-		statusText := "Belum Terpasang di Server"
-		actionBtn := st.ButtonActive.Render("👉 Tekan [Enter] atau [I] untuk Pasang Sekarang")
+		statusText := "Belum Terpasang"
+		actionBtn := st.ButtonActive.Render("👉 [Enter/I] Pasang")
 		if app.Installed {
-			statusText = "🟢 Sudah Terpasang & Siap Digunakan"
-			actionBtn = st.PillDanger.Render("🗑️ Tekan [X] untuk Menghapus (Uninstall)")
+			statusText = "🟢 Siap Digunakan"
+			actionBtn = st.PillDanger.Render("🗑️ [X] Hapus")
 		}
 
 		distroInstallMethod := "dietpi-software install " + app.DietPiID
@@ -156,16 +154,10 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 			distroInstallMethod = "apt-get install -y " + app.PackageName
 		}
 
-		thirdPartyBadge := ""
-		if app.IsThirdParty {
-			thirdPartyBadge = "\n🛡️ Tipe: Vendor Pihak Ketiga Resmi Terverifikasi"
-		}
-
 		detailContent := fmt.Sprintf(
-			"📌 Aplikasi       : %s\n🏷️ Kategori       : %s\n📡 Port Layanan   : %s\n⚙️ Perintah Sistem: %s\n📊 Status         : %s%s\n\n📖 Deskripsi Singkat:\n%s\n\n💡 Rekomendasi Senior:\n%s\n\n⚡ Aksi Cepat:\n%s",
-			app.Name, app.Category, app.Port, distroInstallMethod, statusText, thirdPartyBadge,
+			"📌 %s [%s]\n📡 Port: %s | Status: %s\n⚙️ Command: %s\n\n📖 Deskripsi:\n%s\n\n⚡ Aksi:\n%s",
+			app.Name, app.Category, app.Port, statusText, distroInstallMethod,
 			app.Description,
-			app.Insight,
 			actionBtn,
 		)
 		detailPanel = st.CardActive.Width(contentWidth/2 - 2).Render(detailContent)
@@ -173,26 +165,17 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	mainRow := lipgloss.JoinHorizontal(lipgloss.Top, listPanel, "  ", detailPanel)
 
-	// Living Pixel Art Animation Banner at Bottom (Desain Indah & Artistik)
+	// Living Pixel Art Animation Banner at Bottom (Desain Indah & Artistik WebUI)
 	activeArtwork := wallpaper.GetAnimatedPaddyFarmer(animFrame)
 	artBanner := st.Card.Width(contentWidth).Render(
-		lipgloss.JoinVertical(lipgloss.Left,
-			activeArtwork,
-			"",
-			st.RowNormal.Render("⌨️ Navigasi: [Tab/Shift+Tab] Kategori | [↑/↓] Pilih App | [Enter/I] Pasang | [X] Hapus | [1-3] Tab | [T] Tema | [M] WM | [W] Setup | [q] Keluar"),
-		),
+		activeArtwork,
 	)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		header,
-		sub,
-		"",
 		infoBanner,
-		"",
 		filterContainer,
-		"",
 		mainRow,
-		"",
 		artBanner,
 	)
 }
