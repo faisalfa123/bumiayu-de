@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Bumiayu TUI - Installer Script
+# Bumiayu TUI - Installer & Auto-Updater Script
 # Lightweight & Elegant TUI Desktop Environment for ODROID-C2 & Linux Servers
 # ==============================================================================
 
@@ -9,6 +9,7 @@ set -e
 REPO="faisalfa123/bumiayu-de"
 INSTALL_DIR="/usr/local/bin"
 BIN_NAME="bumiayu"
+UNINSTALLER_NAME="bumiayu-uninstall"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -35,7 +36,16 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 2. Detect System Architecture
+# 2. Check if already installed (Auto Reinstall / Update Detection)
+IS_UPDATE=0
+if [ -f "${INSTALL_DIR}/${BIN_NAME}" ]; then
+  IS_UPDATE=1
+  CURRENT_VER=$("${INSTALL_DIR}/${BIN_NAME}" -v 2>/dev/null || echo "terpasang")
+  echo -e "🔄 ${YELLOW}Terdeteksi Bumiayu TUI sudah ada di sistem (${CURRENT_VER}).${NC}"
+  echo -e "⚡ ${GREEN}Mode Pembaruan Aktif: Melakukan instal ulang / update ke versi terbaru...${NC}"
+fi
+
+# 3. Detect System Architecture
 ARCH=$(uname -m)
 case "$ARCH" in
   aarch64|arm64)
@@ -56,7 +66,7 @@ case "$ARCH" in
     ;;
 esac
 
-# 3. Fetch latest release version from GitHub API (including pre-releases/betas)
+# 4. Fetch latest release version from GitHub API (including pre-releases/betas)
 echo -e "🌐 Memeriksa versi rilis terbaru dari GitHub..."
 LATEST_TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases" | grep '"tag_name":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
 
@@ -72,7 +82,7 @@ TEMP_DIR=$(mktemp -d)
 
 echo -e "📥 Mengunduh binary: ${CYAN}${DOWNLOAD_URL}${NC} ..."
 if curl -fsSL "$DOWNLOAD_URL" -o "${TEMP_DIR}/bumiayu.tar.gz"; then
-  echo -e "📦 Mengekstrak berkas..."
+  echo -e "📦 Mengekstrak dan memperbarui binary..."
   tar -xzf "${TEMP_DIR}/bumiayu.tar.gz" -C "${TEMP_DIR}"
   install -m 755 "${TEMP_DIR}/bumiayu-linux-${TARGET_ARCH}" "${INSTALL_DIR}/${BIN_NAME}"
 else
@@ -81,17 +91,42 @@ else
   chmod +x "${INSTALL_DIR}/${BIN_NAME}"
 fi
 
+# 5. Create Standalone Uninstaller Helper in /usr/local/bin/bumiayu-uninstall
+cat << 'EOF' > "${INSTALL_DIR}/${UNINSTALLER_NAME}"
+#!/usr/bin/env bash
+set -e
+if [ "$EUID" -ne 0 ]; then
+  echo "⚠️ Harap jalankan dengan sudo: sudo bumiayu-uninstall"
+  exit 1
+fi
+echo "🗑️ Menghapus Bumiayu TUI dari sistem..."
+rm -f /usr/local/bin/bumiayu
+rm -f /usr/local/bin/bumiayu-uninstall
+for f in /root/.bashrc /home/*/.bashrc; do
+  [ -f "$f" ] && sed -i '/BUMIAYU_LOADED/d' "$f" 2>/dev/null || true
+done
+echo "✅ Bumiayu TUI telah berhasil dihapus bersih."
+EOF
+chmod +x "${INSTALL_DIR}/${UNINSTALLER_NAME}"
+
 # Cleanup
 rm -rf "$TEMP_DIR"
 
 echo "------------------------------------------------------------------"
-echo -e "${GREEN}🎉 Selamat! Bumiayu TUI berhasil terpasang di ${INSTALL_DIR}/${BIN_NAME}${NC}"
+if [ "$IS_UPDATE" -eq 1 ]; then
+  echo -e "${GREEN}🎉 Pembaruan / Instal ulang Berhasil! Versi terbaru (${LATEST_TAG}) aktif di ${INSTALL_DIR}/${BIN_NAME}${NC}"
+else
+  echo -e "${GREEN}🎉 Selamat! Bumiayu TUI (${LATEST_TAG}) berhasil dipasang di ${INSTALL_DIR}/${BIN_NAME}${NC}"
+fi
 echo ""
-echo -e "Cara menjalankan:"
-echo -e "  Ketik: ${CYAN}bumiayu${NC}"
+echo -e "▶️  Cara Menjalankan:"
+echo -e "    Ketik: ${CYAN}bumiayu${NC}"
 echo ""
-echo -e "Tips SSH Auto-start:"
-echo -e "  Agar Bumiayu TUI otomatis terbuka setiap kali Anda login via SSH,"
-echo -e "  tambahkan baris berikut ke ${YELLOW}~/.bashrc${NC} Anda:"
-echo -e "  ${GREEN}[ -z \"\$BUMIAYU_LOADED\" ] && exec bumiayu${NC}"
+echo -e "🗑️  Cara Uninstall (Menghapus):"
+echo -e "    Ketik: ${YELLOW}sudo bumiayu-uninstall${NC}"
+echo -e "    Atau : ${YELLOW}curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/uninstall.sh | sudo bash${NC}"
+echo ""
+echo -e "💡  Tips Auto-start saat SSH:"
+echo -e "    Tambahkan baris berikut ke ${YELLOW}~/.bashrc${NC}:"
+echo -e "    ${GREEN}[ -z \"\$BUMIAYU_LOADED\" ] && exec bumiayu${NC}"
 echo "------------------------------------------------------------------"

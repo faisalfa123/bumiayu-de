@@ -5,7 +5,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// RenderGuide renders user manual and practical cheat sheet
+// RenderGuide renders user manual, update instructions, and uninstaller guide
 func RenderGuide(st styles.ThemeStyles, width, height int) string {
 	contentWidth := width - 6
 	if contentWidth < 50 {
@@ -32,7 +32,7 @@ func RenderGuide(st styles.ThemeStyles, width, height int) string {
 
 	// Card 2: Install & Uninstall Aplikasi
 	appText := `• Masuk ke tab [2] Toko Aplikasi.
-• Pilih aplikasi (misal: Docker, Nginx, WireGuard, Samba).
+• Pilih aplikasi (Docker, Nginx, WireGuard, Samba, dll).
 • Tekan [Enter] atau [I] untuk Memasang (Install).
 • Tekan [X] untuk Menghapus (Uninstall).
 • Jendela konfirmasi akan muncul. Tekan [Y] untuk Ya atau [N] untuk Batal.
@@ -48,17 +48,21 @@ func RenderGuide(st styles.ThemeStyles, width, height int) string {
 
 	topRow := lipgloss.JoinHorizontal(lipgloss.Top, navCard, "  ", appCard)
 
-	// Card 3: Pengaturan Tampilan & Tips Hemat RAM
-	tipsText := `• Mengubah Tampilan: Masuk ke tab [3] Pengaturan untuk memilih model tampilan Window Manager (Floating / Tiling / Card Grid) dan memilih tema (Terang / Hangat / Gelap).
-• Ganti Tema Cepat: Tekan tombol [T] kapan saja untuk beralih antara Terang dan Gelap.
-• Ganti Bahasa: Tekan tombol [L] kapan saja untuk beralih antara Bahasa Indonesia dan English.
-• Pencegahan OOM (Out Of Memory) di ODROID-C2: Bumiayu TUI hanya memakan ~12 MB RAM. Pastikan server memiliki Swap minimal 1GB agar proses berat seperti Docker tidak menyebabkan sistem freeze.`
+	// Card 3: Update & Uninstall Bumiayu TUI
+	updateUninstallText := `🔄 CARA UPDATE / INSTAL ULANG:
+• Cukup jalankan kembali perintah install 1-baris. Sistem otomatis mendeteksi versi terpasang dan memperbarui binary ke versi rilis terbaru tanpa merusak setting Anda.
 
-	tipsCard := st.CardActive.Width(contentWidth).Render(
+🗑️ CARA UNINSTALL (MENGHAPUS BERSIH):
+• Cukup ketik perintah berikut di terminal server:
+    sudo bumiayu-uninstall
+• Atau via curl:
+    curl -fsSL https://raw.githubusercontent.com/faisalfa123/bumiayu-de/main/scripts/uninstall.sh | sudo bash`
+
+	manageCard := st.CardActive.Width(contentWidth).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render("💡 3. Kustomisasi Tampilan & Tips Server"),
+			st.Title.Render("🛠️ 3. Pembaruan Otomatis (Update) & Cara Uninstall"),
 			"",
-			tipsText,
+			updateUninstallText,
 		),
 	)
 
@@ -68,6 +72,6 @@ func RenderGuide(st styles.ThemeStyles, width, height int) string {
 		"",
 		topRow,
 		"",
-		tipsCard,
+		manageCard,
 	)
 }

@@ -50,7 +50,7 @@ Bumiayu TUI membagi pengelolaan sistem ke dalam 7 panel terintegrasi:
 
 ## 🚀 Panduan Instalasi Cepat (1-Baris)
 
-### Di ODROID-C2 atau Server Linux (Ubuntu / Debian / Armbian):
+### Di ODROID-C2 atau Server Linux (Ubuntu / Debian / DietPi / Armbian):
 
 Cukup jalankan satu perintah berikut di terminal Anda:
 
@@ -58,7 +58,24 @@ Cukup jalankan satu perintah berikut di terminal Anda:
 curl -fsSL https://raw.githubusercontent.com/faisalfa123/bumiayu-de/main/scripts/install.sh | sudo bash
 ```
 
-Skrip akan secara otomatis mendeteksi apakah mesin Anda adalah **ARM64** (ODROID-C2) atau **AMD64** (x86_64) dan memasang binary yang tepat ke `/usr/local/bin/bumiayu`.
+> **Catatan Pembaruan (Auto-Update):**  
+> Jika Bumiayu TUI sudah pernah terpasang di sistem Anda, menjalankan perintah di atas akan secara otomatis mendeteksinya dan melakukan **instal ulang / pembaruan langsung (auto-update)** ke versi terbaru.
+
+---
+
+## 🗑️ Cara Uninstall (Menghapus Bersih)
+
+Jika Anda ingin menghapus Bumiayu TUI dari server Anda:
+
+**Cara 1 (Paling Mudah):**
+```bash
+sudo bumiayu-uninstall
+```
+
+**Cara 2 (Via curl):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/faisalfa123/bumiayu-de/main/scripts/uninstall.sh | sudo bash
+```
 
 ---
 
