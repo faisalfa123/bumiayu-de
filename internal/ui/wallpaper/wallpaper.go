@@ -31,57 +31,81 @@ const (
 	SceneMalamBintang                    // 🌌 Langit Malam Berbintang
 )
 
-// GetAnimatedPaddyFarmer returns animated pixel art of farmers in Bumiayu rice paddy
+// GetAnimatedPaddyFarmer returns rich 6-frame animated pixel art of farmers in Bumiayu rice paddy
 func GetAnimatedPaddyFarmer(frame int) string {
-	f := frame % 4
+	f := frame % 6
 	switch f {
 	case 0:
-		// Frame 0: Petani mengangkat cangkul ke atas
-		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
-			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
-			"\x1b[38;2;254;240;138m             (o_  \x1b[38;2;251;191;36m__/\x1b[0m                 \x1b[38;2;254;240;138m(o_  \x1b[38;2;251;191;36m__/\x1b[0m       \x1b[38;2;253;224;71m☁️  Awan Berarak\x1b[0m\n" +
-			"\x1b[38;2;251;146;60m             /|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m               \x1b[38;2;251;146;60m/|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m     \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
-			"\x1b[38;2;217;119;6m             / \\                    \x1b[38;2;217;119;6m/ \\\x1b[0m\n" +
-			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
-			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
-			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
-			"\x1b[1;33m  ░░ 🌾 Petani Bumiayu Mengayunkan Cangkul Mengolah Tanah Subur 🌾 ░░\x1b[0m"
+		// Frame 0: Petani 1 bersiap, Kerbau membajak sawah di sisi kanan
+		return "\x1b[1;32m  🌾 SAWAH TERASERING BUMIAYU [PIXEL ART ANIMASI HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 72) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m    (o_  \x1b[38;2;251;191;36m__/\x1b[0m                       \x1b[38;2;161;98;7m(___)  \x1b[38;2;180;83;9m(___)\x1b[0m                  \x1b[38;2;253;224;71m☁️   Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m    /|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m                      \x1b[38;2;180;83;9m(o o)____/     \x1b[38;2;217;119;6m(o_ \x1b[38;2;251;191;36m__/\x1b[0m        \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m    / \\                          \x1b[38;2;146;64;14m@@             \x1b[38;2;217;119;6m/|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m  ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m ████████████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m ░░ 🌾 Petani Mengayun Cangkul & Kerbau Membajak Sawah Subur Bumiayu 🌾 ░░\x1b[0m"
 
 	case 1:
-		// Frame 1: Cangkul menancap ke tanah sawah (Mencangkul)
-		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
-			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
-			"\x1b[38;2;254;240;138m             (o_                       (o_            \x1b[38;2;253;224;71m☁️   Awan Berarak\x1b[0m\n" +
-			"\x1b[38;2;251;146;60m             /|\\_                      /|\\_           \x1b[38;2;250;204;21m☀️   Matahari Pagi\x1b[0m\n" +
-			"\x1b[38;2;217;119;6m             / \\ \x1b[38;2;180;83;9m\\                       / \\ \x1b[38;2;180;83;9m\\\x1b[0m\n" +
-			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m,,, ,,,,, ,,,,, ,,,,, ,,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m,,, ,,,,, ,,,,, \x1b[0m\n" +
-			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
-			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
-			"\x1b[1;33m  ░░ 🌾 Cangkul Menancap Kokoh — Semangat Petani Menjaga Pangan 🌾 ░░\x1b[0m"
+		// Frame 1: Cangkul menancap ke tanah lumpur, burung terbang di angkasa
+		return "\x1b[1;32m  🌾 SAWAH TERASERING BUMIAYU [PIXEL ART ANIMASI HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 72) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m    (o_            \x1b[38;2;224;242;254m~v~                   \x1b[38;2;161;98;7m(___)  \x1b[38;2;180;83;9m(___)\x1b[0m            \x1b[38;2;253;224;71m☁️  Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m    /|\\_                                \x1b[38;2;180;83;9m(o o)____/     \x1b[38;2;217;119;6m(o_\x1b[0m           \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m    / \\ \x1b[38;2;180;83;9m\\                                \x1b[38;2;146;64;14m@@             \x1b[38;2;217;119;6m/|\\_\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m  ,,,,, ,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m ████████████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m ░░ 🌾 Cangkul Menancap Kokoh — Burung Pipit Melintas di Pematang 🌾 ░░\x1b[0m"
 
 	case 2:
-		// Frame 2: Petani melangkah menyusuri pematang sawah
-		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
-			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
-			"\x1b[38;2;254;240;138m                (o_                       (o_         \x1b[38;2;253;224;71m☁️    Awan Berarak\x1b[0m\n" +
-			"\x1b[38;2;251;146;60m               --|--\x1b[38;2;180;83;9m/                     --|--\x1b[38;2;180;83;9m/        \x1b[38;2;250;204;21m☀️   Matahari Pagi\x1b[0m\n" +
-			"\x1b[38;2;217;119;6m                / > \x1b[38;2;202;138;4m[===|                  / > \x1b[38;2;202;138;4m[===|\x1b[0m\n" +
-			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
-			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
-			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
-			"\x1b[1;33m  ░░ 🌾 Berjalan di Pematang Hijau Menatap Gunung Slamet Megah 🌾 ░░\x1b[0m"
+		// Frame 2: Petani melangkah ke depan
+		return "\x1b[1;32m  🌾 SAWAH TERASERING BUMIAYU [PIXEL ART ANIMASI HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 72) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m      (o_                 \x1b[38;2;224;242;254m~v~                   \x1b[38;2;161;98;7m(___)  \x1b[38;2;180;83;9m(___)\x1b[0m        \x1b[38;2;253;224;71m☁️ Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m     --|--\x1b[38;2;180;83;9m/                                    \x1b[38;2;180;83;9m(o o)____/    \x1b[38;2;217;119;6m--|--\x1b[38;2;180;83;9m/\x1b[0m     \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m      / > \x1b[38;2;202;138;4m[===|                                \x1b[38;2;146;64;14m@@            \x1b[38;2;217;119;6m/ > \x1b[38;2;202;138;4m[===|\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m  ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m ████████████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m ░░ 🌾 Melangkah Menyusuri Pematang Menuju Lereng Gunung Slamet 🌾 ░░\x1b[0m"
+
+	case 3:
+		// Frame 3: Mengayunkan cangkul kembali ke atas
+		return "\x1b[1;32m  🌾 SAWAH TERASERING BUMIAYU [PIXEL ART ANIMASI HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 72) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m        (o_  \x1b[38;2;251;191;36m__/\x1b[0m                               \x1b[38;2;161;98;7m(___)  \x1b[38;2;180;83;9m(___)\x1b[0m      \x1b[38;2;253;224;71m☁️  Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m        /|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m                            \x1b[38;2;180;83;9m(o o)____/   \x1b[38;2;217;119;6m(o_  \x1b[38;2;251;191;36m__/\x1b[0m    \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m        / \\                                \x1b[38;2;146;64;14m@@           \x1b[38;2;217;119;6m/|\\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m  ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m ████████████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m ░░ 🌾 Angin Semilir Lembah Slamet Membawa Kesejukan Bagi Server 🌾 ░░\x1b[0m"
+
+	case 4:
+		// Frame 4: Mencangkul dalam tanah
+		return "\x1b[1;32m  🌾 SAWAH TERASERING BUMIAYU [PIXEL ART ANIMASI HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 72) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m        (o_                                     \x1b[38;2;161;98;7m(___)  \x1b[38;2;180;83;9m(___)\x1b[0m    \x1b[38;2;253;224;71m☁️   Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m        /|\\_                                   \x1b[38;2;180;83;9m(o o)____/   \x1b[38;2;217;119;6m(o_\x1b[0m         \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m        / \\ \x1b[38;2;180;83;9m\\                                   \x1b[38;2;146;64;14m@@           \x1b[38;2;217;119;6m/|\\_\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m  ,,,,, ,,,,, ,,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,\x1b[38;2;202;138;4m[===|\x1b[38;2;134;239;172m,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m ████████████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m ░░ 🌾 Kesuburan Tanah Menghasilkan Pangan Terbaik untuk Nusantara 🌾 ░░\x1b[0m"
 
 	default:
-		// Frame 3: Mengibaskan padi dan istirahat sejenak
-		return "\x1b[1;32m  🌾 SAWAH BUMIAYU BERJALAN [ANIMASI PIXEL HIDUP] 🌾\x1b[0m\n" +
-			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 64) + "\x1b[0m\n" +
-			"\x1b[38;2;254;240;138m                  (o_                       (o_       \x1b[38;2;253;224;71m☁️   Awan Berarak\x1b[0m\n" +
-			"\x1b[38;2;251;146;60m                 <|\\                       <|\\        \x1b[38;2;250;204;21m☀️   Matahari Pagi\x1b[0m\n" +
-			"\x1b[38;2;217;119;6m                 < \\  \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|                 < \\  \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m\n" +
-			"\x1b[38;2;134;239;172m   ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
-			"\x1b[38;2;74;222;128m  _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
-			"\x1b[38;2;22;163;74m  ████████████████████████████████████████████████████████████████\x1b[0m\n" +
-			"\x1b[1;33m  ░░ 🌾 Bulir Padi Menguning, Angin Semilir Menyejukkan Server 🌾 ░░\x1b[0m"
+		// Frame 5: Istirahat sejenak sambil minum teh poci hangat
+		return "\x1b[1;32m  🌾 SAWAH TERASERING BUMIAYU [PIXEL ART ANIMASI HIDUP] 🌾\x1b[0m\n" +
+			"\x1b[38;2;34;197;94m  " + strings.Repeat("━", 72) + "\x1b[0m\n" +
+			"\x1b[38;2;254;240;138m          (o_                                   \x1b[38;2;161;98;7m(___)  \x1b[38;2;180;83;9m(___)\x1b[0m    \x1b[38;2;253;224;71m☁️  Awan Berarak\x1b[0m\n" +
+			"\x1b[38;2;251;146;60m         <|\\  \x1b[38;2;254;240;138m☕\x1b[0m                                \x1b[38;2;180;83;9m(o o)____/   \x1b[38;2;217;119;6m<|\\\x1b[0m         \x1b[38;2;250;204;21m☀️  Matahari Pagi\x1b[0m\n" +
+			"\x1b[38;2;217;119;6m         < \\  \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m                             \x1b[38;2;146;64;14m@@           \x1b[38;2;217;119;6m< \\ \x1b[38;2;180;83;9m[\x1b[38;2;202;138;4m===|\x1b[0m\n" +
+			"\x1b[38;2;134;239;172m  ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, ,,,,, \x1b[0m\n" +
+			"\x1b[38;2;74;222;128m _|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_|||||_\x1b[0m\n" +
+			"\x1b[38;2;22;163;74m ████████████████████████████████████████████████████████████████████████\x1b[0m\n" +
+			"\x1b[1;33m ░░ 🌾 Menikmati Teh Poci Gula Batu di Saung Pinggir Sawah Bumiayu 🌾 ░░\x1b[0m"
 	}
 }
 

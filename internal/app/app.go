@@ -131,7 +131,7 @@ func (m *Model) refreshAllData() {
 }
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Millisecond*600, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Millisecond*450, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
 }
@@ -529,7 +529,7 @@ func (m *Model) applySettingSelection() {
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.8",
+		ConfigVersion:     "v0.9.0-beta.9",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}
