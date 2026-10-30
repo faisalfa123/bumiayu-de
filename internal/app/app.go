@@ -296,6 +296,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.CommerceSidebarCursor++
 				}
 				return m, nil
+			case "w", "W":
+				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi navigate up apps
+					if m.CatalogCursor > 0 {
+						m.CatalogCursor--
+					}
+				}
+				return m, nil
+			case "s", "S":
+				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi navigate down apps
+					if m.CatalogCursor < len(m.Catalog)-1 {
+						m.CatalogCursor++
+					}
+				}
+				return m, nil
 			case "left", "h":
 				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi
 					if m.ActiveCategory > 0 {
@@ -319,7 +333,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			case "enter", "i", "I":
 				if m.CommerceSidebarCursor == 2 {
-					// Quick install/manage Immich
+					// Pasang / Buka Immich Toolkit
 					for _, item := range m.Catalog {
 						if item.ID == "immich-sbc" {
 							action := "install"
@@ -352,6 +366,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 					return m, nil
 				}
+				// Untuk menu sidebar lainnya (Dasbor, Layanan, Jaringan, Keamanan, Log, Pengaturan),
+				// Enter hanya memfokuskan / membuka halaman detail tersebut di panel tengah tanpa memunculkan modal pasang.
+				return m, nil
 			case "x", "X":
 				if m.CommerceSidebarCursor == 1 {
 					filtered := m.getFilteredCatalog()
@@ -368,6 +385,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			}
+			return m, nil
 		}
 
 		// 5. GLOBAL DESKTOP SHORTCUTS (Fallback / Direct)
