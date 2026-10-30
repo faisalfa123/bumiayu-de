@@ -3,6 +3,7 @@ package app
 import (
 	"time"
 
+	"github.com/bumiayu/bumiayu-de/internal/config"
 	"github.com/bumiayu/bumiayu-de/internal/i18n"
 	"github.com/bumiayu/bumiayu-de/internal/system"
 	"github.com/bumiayu/bumiayu-de/internal/ui/components"
@@ -43,19 +44,65 @@ type Model struct {
 
 	// 3. Settings cursor
 	SettingsCursor int
+
+	// 4. First-run OOBE Wizard & Recovery State
+	Wizard views.WizardState
 }
 
-// InitialModel initializes the state with default clean Light Theme
+// InitialModel initializes the state with config or opens wizard if first run
 func InitialModel() Model {
 	m := Model{
 		ActiveWorkspace: components.WorkspaceDashboard,
-		ThemeMode:       styles.ThemeLight, // Default: Tampilan Cerah Bersih & Simpel
-		WMMode:          views.WMFloating,  // Default: Window Mengambang Minimalis
+		ThemeMode:       styles.ThemeLight,
+		WMMode:          views.WMFloating,
 		Language:        i18n.ID,
+	}
+
+	// Check configuration & first run
+	cfg, err := config.LoadConfig()
+	if err == nil && cfg.FirstRunCompleted {
+		m.applyUserConfig(cfg)
+		m.Wizard.Active = false
+	} else {
+		// Launch First-run OOBE Wizard
+		m.Wizard.Active = true
+		m.Wizard.HasBackup = config.HasExistingSetup()
+		if m.Wizard.HasBackup {
+			m.Wizard.CurrentStep = views.StepRecovery
+		} else {
+			m.Wizard.CurrentStep = views.StepLanguage
+		}
+		m.Wizard.DraftConfig = config.DefaultConfig()
 	}
 
 	m.refreshAllData()
 	return m
+}
+
+func (m *Model) applyUserConfig(cfg config.UserConfig) {
+	switch cfg.Theme {
+	case "warm":
+		m.ThemeMode = styles.ThemeWarm
+	case "dark":
+		m.ThemeMode = styles.ThemeDark
+	default:
+		m.ThemeMode = styles.ThemeLight
+	}
+
+	switch cfg.WMModel {
+	case "tiling":
+		m.WMMode = views.WMTiling
+	case "cardgrid":
+		m.WMMode = views.WMCardGrid
+	default:
+		m.WMMode = views.WMFloating
+	}
+
+	if cfg.Language == "en" {
+		m.Language = i18n.EN
+	} else {
+		m.Language = i18n.ID
+	}
 }
 
 func (m *Model) refreshAllData() {
@@ -97,42 +144,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		key := msg.String()
 
-		// If App Modal is Active, handle modal shortcuts
-		if m.AppDialog.Active {
-			if m.AppDialog.IsRunning {
-				return m, nil // Wait for completion
-			}
-
-			if m.AppDialog.Logs != "" {
-				// Finished view: any key closes modal
-				if key == "enter" || key == "esc" || key == "q" || key == " " {
-					m.AppDialog.Active = false
-					m.AppDialog.Logs = ""
-					return m, nil
-				}
-			}
-
-			// Confirmation view
-			if key == "y" || key == "Y" {
-				m.AppDialog.IsRunning = true
-				m.AppDialog.Logs = "Menjalankan perintah " + m.AppDialog.Action + " " + m.AppDialog.App.PackageName + "..."
-				action := m.AppDialog.Action
-				pkg := m.AppDialog.App.PackageName
-				return m, func() tea.Msg {
-					out, err := system.ExecutePackageAction(action, pkg)
-					success := err == nil
-					return AppActionMsg{Logs: out, Success: success}
-				}
-			}
-
-			if key == "n" || key == "N" || key == "esc" {
-				m.AppDialog.Active = false
-				return m, nil
-			}
-			return m, nil
+		// 1. WIZARD / RECOVERY HANDLING
+		if m.Wizard.Active {
+			return m.handleWizardKeys(key)
 		}
 
-		// Global navigation shortcuts
+		// 2. APP INSTALL/UNINSTALL MODAL HANDLING
+		if m.AppDialog.Active {
+			return m.handleAppModalKeys(key)
+		}
+
+		// 3. GLOBAL DESKTOP SHORTCUTS
 		switch key {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -147,6 +169,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				themeName = "Gelap"
 			}
 			m.StatusMessage = "Tema diubah ke: " + themeName
+			m.saveCurrentConfig()
+			return m, nil
+
+		// Open Setup Wizard anytime (W)
+		case "w", "W":
+			m.Wizard.Active = true
+			m.Wizard.CurrentStep = views.StepLanguage
+			m.Wizard.SelectedRow = 0
+			m.Wizard.DraftConfig = config.DefaultConfig()
 			return m, nil
 
 		// Direct Tab Switching via numbers 1 - 4
@@ -241,12 +272,126 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m *Model) handleWizardKeys(key string) (tea.Model, tea.Cmd) {
+	switch key {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "up", "k":
+		if m.Wizard.SelectedRow > 0 {
+			m.Wizard.SelectedRow--
+		}
+	case "down", "j":
+		m.Wizard.SelectedRow++
+	case "enter", " ":
+		switch m.Wizard.CurrentStep {
+		case views.StepRecovery:
+			if m.Wizard.SelectedRow == 0 {
+				// Recover previous setup
+				cfg, err := config.LoadBackupConfig()
+				if err == nil {
+					m.applyUserConfig(cfg)
+					m.StatusMessage = "Pengaturan lama berhasil dipulihkan (Recovery)!"
+				}
+				m.Wizard.Active = false
+				return m, nil
+			}
+			// Fresh Setup
+			m.Wizard.CurrentStep = views.StepLanguage
+			m.Wizard.SelectedRow = 0
+
+		case views.StepLanguage:
+			if m.Wizard.SelectedRow == 1 {
+				m.Language = i18n.EN
+				m.Wizard.DraftConfig.Language = "en"
+			} else {
+				m.Language = i18n.ID
+				m.Wizard.DraftConfig.Language = "id"
+			}
+			m.Wizard.CurrentStep = views.StepTheme
+			m.Wizard.SelectedRow = 0
+
+		case views.StepTheme:
+			switch m.Wizard.SelectedRow {
+			case 1:
+				m.ThemeMode = styles.ThemeWarm
+				m.Wizard.DraftConfig.Theme = "warm"
+			case 2:
+				m.ThemeMode = styles.ThemeDark
+				m.Wizard.DraftConfig.Theme = "dark"
+			default:
+				m.ThemeMode = styles.ThemeLight
+				m.Wizard.DraftConfig.Theme = "light"
+			}
+			m.Wizard.CurrentStep = views.StepWM
+			m.Wizard.SelectedRow = 0
+
+		case views.StepWM:
+			switch m.Wizard.SelectedRow {
+			case 1:
+				m.WMMode = views.WMTiling
+				m.Wizard.DraftConfig.WMModel = "tiling"
+			case 2:
+				m.WMMode = views.WMCardGrid
+				m.Wizard.DraftConfig.WMModel = "cardgrid"
+			default:
+				m.WMMode = views.WMFloating
+				m.Wizard.DraftConfig.WMModel = "floating"
+			}
+			m.Wizard.CurrentStep = views.StepSSH
+			m.Wizard.SelectedRow = 0
+
+		case views.StepSSH:
+			m.Wizard.DraftConfig.AutoStartSSH = (m.Wizard.SelectedRow == 0)
+			m.Wizard.DraftConfig.FirstRunCompleted = true
+			config.SaveConfig(m.Wizard.DraftConfig)
+			m.Wizard.CurrentStep = views.StepComplete
+
+		case views.StepComplete:
+			m.Wizard.Active = false
+			m.StatusMessage = "Selamat datang di Bumiayu TUI!"
+		}
+	}
+	return m, nil
+}
+
+func (m *Model) handleAppModalKeys(key string) (tea.Model, tea.Cmd) {
+	if m.AppDialog.IsRunning {
+		return m, nil
+	}
+
+	if m.AppDialog.Logs != "" {
+		if key == "enter" || key == "esc" || key == "q" || key == " " {
+			m.AppDialog.Active = false
+			m.AppDialog.Logs = ""
+			return m, nil
+		}
+	}
+
+	if key == "y" || key == "Y" {
+		m.AppDialog.IsRunning = true
+		m.AppDialog.Logs = "Menjalankan proses " + m.AppDialog.Action + " " + m.AppDialog.App.PackageName + "..."
+		action := m.AppDialog.Action
+		pkg := m.AppDialog.App.PackageName
+		return m, func() tea.Msg {
+			out, err := system.ExecutePackageAction(action, pkg)
+			success := err == nil
+			return AppActionMsg{Logs: out, Success: success}
+		}
+	}
+
+	if key == "n" || key == "N" || key == "esc" {
+		m.AppDialog.Active = false
+		return m, nil
+	}
+	return m, nil
+}
+
 func (m *Model) moveCursor(delta int) {
 	switch m.ActiveWorkspace {
 	case components.WorkspaceApps:
 		m.CatalogCursor = clamp(m.CatalogCursor+delta, 0, len(m.Catalog)-1)
 	case components.WorkspaceSettings:
-		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 5) // 0-2 themes, 3-5 WM models
+		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 5)
 	}
 }
 
@@ -258,6 +403,37 @@ func (m *Model) applySettingSelection() {
 		m.WMMode = views.WMMode(m.SettingsCursor - 3)
 		m.StatusMessage = "Model Window Manager berhasil diubah!"
 	}
+	m.saveCurrentConfig()
+}
+
+func (m *Model) saveCurrentConfig() {
+	cfg := config.UserConfig{
+		ConfigVersion:     "v0.9.0-beta.3",
+		FirstRunCompleted: true,
+		AutoStartSSH:      false,
+	}
+	switch m.ThemeMode {
+	case styles.ThemeWarm:
+		cfg.Theme = "warm"
+	case styles.ThemeDark:
+		cfg.Theme = "dark"
+	default:
+		cfg.Theme = "light"
+	}
+	switch m.WMMode {
+	case views.WMTiling:
+		cfg.WMModel = "tiling"
+	case views.WMCardGrid:
+		cfg.WMModel = "cardgrid"
+	default:
+		cfg.WMModel = "floating"
+	}
+	if m.Language == i18n.EN {
+		cfg.Language = "en"
+	} else {
+		cfg.Language = "id"
+	}
+	config.SaveConfig(cfg)
 }
 
 func clamp(v, min, max int) int {
@@ -273,7 +449,7 @@ func clamp(v, min, max int) int {
 	return v
 }
 
-// View renders the complete Desktop Environment
+// View renders the complete Desktop Environment or Wizard modal
 func (m Model) View() string {
 	width := m.width
 	if width < 80 {
@@ -284,16 +460,20 @@ func (m Model) View() string {
 		height = 24
 	}
 
-	// 1. Get active theme styling
 	st := styles.GetTheme(m.ThemeMode)
 
-	// 2. Top Desktop Bar
+	// If Wizard is active, render centered Setup Wizard
+	if m.Wizard.Active {
+		return views.RenderWizard(m.Wizard, st, width, height)
+	}
+
+	// 1. Top Desktop Bar
 	topBar := components.RenderTopBar(m.Hardware, st, m.Language, width)
 
-	// 3. Workspace Navigation Tabs
+	// 2. Workspace Navigation Tabs
 	workspaceTabs := components.RenderWorkspaceTabs(m.ActiveWorkspace, st, width)
 
-	// 4. Main Workspace View
+	// 3. Main Workspace View
 	var currentView string
 	switch m.ActiveWorkspace {
 	case components.WorkspaceDashboard:
@@ -306,7 +486,7 @@ func (m Model) View() string {
 		currentView = views.RenderGuide(st, width, height)
 	}
 
-	// 5. Status Bar
+	// 4. Status Bar
 	statusBar := components.RenderStatusBar(st, width, m.StatusMessage)
 
 	return lipgloss.JoinVertical(lipgloss.Left,
