@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"time"
 
 	"github.com/bumiayu/bumiayu-de/internal/config"
@@ -9,6 +10,7 @@ import (
 	"github.com/bumiayu/bumiayu-de/internal/ui/components"
 	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
 	"github.com/bumiayu/bumiayu-de/internal/ui/views"
+	"github.com/bumiayu/bumiayu-de/internal/ui/wallpaper"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -30,6 +32,8 @@ type Model struct {
 	ActiveWorkspace components.Workspace
 	ThemeMode       styles.ThemeMode
 	WMMode          views.WMMode
+	WallpaperType   wallpaper.WallpaperType
+	WallpaperPreset wallpaper.PresetScene
 	Language        i18n.Language
 	StatusMessage   string
 
@@ -42,8 +46,10 @@ type Model struct {
 	PackageCount  int
 	AppDialog     views.AppDialogState
 
-	// Settings cursor
+	// Settings cursor & image input modal
 	SettingsCursor int
+	ShowImageInput bool
+	ImageInputPath string
 
 	// First-run OOBE Wizard & Recovery State
 	Wizard views.WizardState
@@ -55,7 +61,10 @@ func InitialModel() Model {
 		ActiveWorkspace: components.WorkspaceDashboard,
 		ThemeMode:       styles.ThemeLight,
 		WMMode:          views.WMFloating,
+		WallpaperType:   wallpaper.WallpaperDynamicTime,
+		WallpaperPreset: wallpaper.SceneGunungSlamet,
 		Language:        i18n.ID,
+		ImageInputPath:  "/tmp/wallpaper.jpg",
 	}
 
 	cfg, err := config.LoadConfig()
@@ -95,6 +104,16 @@ func (m *Model) applyUserConfig(cfg config.UserConfig) {
 	default:
 		m.WMMode = views.WMFloating
 	}
+
+	switch cfg.WallpaperType {
+	case "custom":
+		m.WallpaperType = wallpaper.WallpaperCustom
+	case "preset":
+		m.WallpaperType = wallpaper.WallpaperPreset
+	default:
+		m.WallpaperType = wallpaper.WallpaperDynamicTime
+	}
+	m.WallpaperPreset = wallpaper.PresetScene(cfg.WallpaperPreset)
 
 	if cfg.Language == "en" {
 		m.Language = i18n.EN
@@ -142,17 +161,50 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		key := msg.String()
 
-		// 1. WIZARD / RECOVERY HANDLING
+		// 1. IMAGE PATH INPUT MODAL
+		if m.ShowImageInput {
+			switch key {
+			case "enter":
+				m.ShowImageInput = false
+				path := strings.TrimSpace(m.ImageInputPath)
+				if path != "" {
+					_, err := wallpaper.ConvertImageToPixelArt(path, 60, 12)
+					if err != nil {
+						m.StatusMessage = "Gagal memproses gambar: " + err.Error()
+					} else {
+						m.WallpaperType = wallpaper.WallpaperCustom
+						m.StatusMessage = "Gambar berhasil dikonversi menjadi pixel art & aktif!"
+						m.saveCurrentConfig()
+					}
+				}
+				return m, nil
+			case "esc":
+				m.ShowImageInput = false
+				return m, nil
+			case "backspace":
+				if len(m.ImageInputPath) > 0 {
+					m.ImageInputPath = m.ImageInputPath[:len(m.ImageInputPath)-1]
+				}
+				return m, nil
+			default:
+				if len(key) == 1 {
+					m.ImageInputPath += key
+				}
+				return m, nil
+			}
+		}
+
+		// 2. WIZARD / RECOVERY HANDLING
 		if m.Wizard.Active {
 			return m.handleWizardKeys(key)
 		}
 
-		// 2. APP INSTALL/UNINSTALL MODAL HANDLING
+		// 3. APP INSTALL/UNINSTALL MODAL HANDLING
 		if m.AppDialog.Active {
 			return m.handleAppModalKeys(key)
 		}
 
-		// 3. GLOBAL DESKTOP SHORTCUTS
+		// 4. GLOBAL DESKTOP SHORTCUTS
 		switch key {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -181,6 +233,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.StatusMessage = "Model Window Manager diubah ke: " + wmName
 			m.saveCurrentConfig()
+			return m, nil
+
+		// Open Image to Pixel Generator (G)
+		case "g", "G":
+			m.ShowImageInput = true
 			return m, nil
 
 		// Open Setup Wizard anytime (W)
@@ -375,11 +432,11 @@ func (m *Model) handleAppModalKeys(key string) (tea.Model, tea.Cmd) {
 
 	if key == "y" || key == "Y" {
 		m.AppDialog.IsRunning = true
-		m.AppDialog.Logs = "Menjalankan proses " + m.AppDialog.Action + " " + m.AppDialog.App.PackageName + "..."
+		m.AppDialog.Logs = "Sedang memproses " + m.AppDialog.Action + " " + m.AppDialog.App.Name + "..."
 		action := m.AppDialog.Action
-		pkg := m.AppDialog.App.PackageName
+		item := m.AppDialog.App
 		return m, func() tea.Msg {
-			out, err := system.ExecutePackageAction(action, pkg)
+			out, err := system.ExecutePackageAction(action, item)
 			success := err == nil
 			return AppActionMsg{Logs: out, Success: success}
 		}
@@ -397,7 +454,7 @@ func (m *Model) moveCursor(delta int) {
 	case components.WorkspaceDashboard:
 		m.CatalogCursor = clamp(m.CatalogCursor+delta, 0, len(m.Catalog)-1)
 	case components.WorkspaceSettings:
-		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 5)
+		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 11) // 0-2 themes, 3-5 WM, 6-11 Wallpaper
 	}
 }
 
@@ -405,16 +462,29 @@ func (m *Model) applySettingSelection() {
 	if m.SettingsCursor < 3 {
 		m.ThemeMode = styles.ThemeMode(m.SettingsCursor)
 		m.StatusMessage = "Tema berhasil diterapkan!"
-	} else {
+	} else if m.SettingsCursor < 6 {
 		m.WMMode = views.WMMode(m.SettingsCursor - 3)
 		m.StatusMessage = "Model Window Manager berhasil diubah!"
+	} else {
+		wpIdx := m.SettingsCursor - 6
+		switch wpIdx {
+		case 0, 1, 2, 3:
+			m.WallpaperType = wallpaper.WallpaperPreset
+			m.WallpaperPreset = wallpaper.PresetScene(wpIdx)
+			m.StatusMessage = "Wallpaper Seni Bumiayu diterapkan!"
+		case 4:
+			m.WallpaperType = wallpaper.WallpaperDynamicTime
+			m.StatusMessage = "Wallpaper Dinamis (Waktu Server) diterapkan!"
+		case 5:
+			m.ShowImageInput = true
+		}
 	}
 	m.saveCurrentConfig()
 }
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.4",
+		ConfigVersion:     "v0.9.0-beta.5",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}
@@ -434,6 +504,15 @@ func (m *Model) saveCurrentConfig() {
 	default:
 		cfg.WMModel = "floating"
 	}
+	switch m.WallpaperType {
+	case wallpaper.WallpaperCustom:
+		cfg.WallpaperType = "custom"
+	case wallpaper.WallpaperPreset:
+		cfg.WallpaperType = "preset"
+	default:
+		cfg.WallpaperType = "dynamic"
+	}
+	cfg.WallpaperPreset = int(m.WallpaperPreset)
 	if m.Language == i18n.EN {
 		cfg.Language = "en"
 	} else {
@@ -468,6 +547,29 @@ func (m Model) View() string {
 
 	st := styles.GetTheme(m.ThemeMode)
 
+	// Image input prompt modal
+	if m.ShowImageInput {
+		modalWidth := width - 12
+		if modalWidth > 68 {
+			modalWidth = 68
+		}
+		content := lipgloss.JoinVertical(lipgloss.Left,
+			st.Badge.Render("🖼️ GENERATOR FOTO KE PIXEL ART BUMIAYU"),
+			"",
+			"Masukkan path file gambar (PNG / JPG) di server Anda:",
+			st.Card.Render(m.ImageInputPath+"_"),
+			"",
+			st.Subtitle.Render("Contoh: /tmp/wallpaper.jpg atau gambar.png"),
+			"",
+			lipgloss.JoinHorizontal(lipgloss.Center,
+				st.ButtonActive.Render("[Enter] Generate Pixel Art"),
+				"    ",
+				st.ButtonNormal.Render("[Esc] Batal"),
+			),
+		)
+		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, st.Modal.Width(modalWidth).Render(content))
+	}
+
 	// If Wizard is active, render centered Setup Wizard
 	if m.Wizard.Active {
 		return views.RenderWizard(m.Wizard, st, width, height)
@@ -483,9 +585,9 @@ func (m Model) View() string {
 	var currentView string
 	switch m.ActiveWorkspace {
 	case components.WorkspaceDashboard:
-		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.AppDialog, m.WMMode, st, m.Language, width, height)
+		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.AppDialog, m.WMMode, m.WallpaperType, m.WallpaperPreset, st, m.Language, width, height)
 	case components.WorkspaceSettings:
-		currentView = views.RenderSettings(m.ThemeMode, m.WMMode, m.SettingsCursor, st, width, height)
+		currentView = views.RenderSettings(m.ThemeMode, m.WMMode, m.WallpaperType, m.WallpaperPreset, m.SettingsCursor, m.ImageInputPath, st, width, height)
 	case components.WorkspaceGuide:
 		currentView = views.RenderGuide(st, width, height)
 	}

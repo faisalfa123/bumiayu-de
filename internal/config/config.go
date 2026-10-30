@@ -15,6 +15,9 @@ type UserConfig struct {
 	AutoStartSSH       bool   `json:"autostart_ssh"`
 	FirstRunCompleted  bool   `json:"first_run_completed"`
 	LastBackupTime     string `json:"last_backup_time"`
+	WallpaperType      string `json:"wallpaper_type"`   // "preset", "dynamic", "custom"
+	WallpaperPreset    int    `json:"wallpaper_preset"` // 0: Slamet, 1: Sawah, 2: Lentera, 3: Malam
+	CustomImagePath    string `json:"custom_image_path"`
 }
 
 // GetConfigDir returns path to ~/.config/bumiayu
@@ -100,11 +103,13 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v0.9.0-beta.3",
+		ConfigVersion:     "v0.9.0-beta.5",
 		Theme:             "light",
 		WMModel:           "floating",
 		Language:          "id",
 		AutoStartSSH:      false,
 		FirstRunCompleted: false,
+		WallpaperType:     "dynamic",
+		WallpaperPreset:   0,
 	}
 }

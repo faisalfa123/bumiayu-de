@@ -1,10 +1,10 @@
 package views
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
+	"github.com/bumiayu/bumiayu-de/internal/ui/wallpaper"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -16,21 +16,18 @@ const (
 	WMCardGrid               // Grid Kartu Minimalis
 )
 
-// RenderSettings renders the customization panel with live preview of WM styles
-func RenderSettings(currentTheme styles.ThemeMode, currentWM WMMode, selectedRow int, st styles.ThemeStyles, width, height int) string {
+// RenderSettings renders the customization panel with Wallpaper, Theme, and WM settings
+func RenderSettings(currentTheme styles.ThemeMode, currentWM WMMode, wpType wallpaper.WallpaperType, wpPreset wallpaper.PresetScene, selectedRow int, imageInput string, st styles.ThemeStyles, width, height int) string {
 	contentWidth := width - 6
 	if contentWidth < 50 {
 		contentWidth = 50
 	}
 
-	header := st.Title.Render("⚙️ PENGATURAN TAMPILAN & WINDOW MANAGER")
-	sub := st.Subtitle.Render("Ubah gaya visual desktop dan palet warna sesuai kenyamanan mata Anda.")
+	header := st.Title.Render("⚙️ PENGATURAN TAMPILAN, WINDOW MANAGER & WALLPAPER")
+	sub := st.Subtitle.Render("Sesuaikan gaya visual, tata letak jendela, dan karya seni wallpaper terminal Anda.")
 
-	// Options List
-	themeNames := []string{"☀️ Terang Bersih (Light Mode - Rekomendasi)", "🌾 Hangat & Lembut (Warm Ivory)", "🌙 Gelap Malam (Midnight Dark)"}
-	wmNames := []string{"🪟 Window Mengambang (Floating WM)", "🔲 Tiling 2-Kolom (Split WM)", "📋 Kartu Grid Sederhana (Card Grid)"}
-
-	// 1. Theme Selector Box
+	// 1. Theme Selector
+	themeNames := []string{"☀️ Terang Bersih (Light Mode)", "🌾 Hangat Lembut (Warm Ivory)", "🌙 Gelap Malam (Midnight Dark)"}
 	var themeItems []string
 	for i, name := range themeNames {
 		cursor := "  "
@@ -44,16 +41,16 @@ func RenderSettings(currentTheme styles.ThemeMode, currentWM WMMode, selectedRow
 		}
 		themeItems = append(themeItems, style.Render(cursor+name))
 	}
-	themeBox := st.Card.Width(contentWidth/2 - 2).Render(
+	themeBox := st.Card.Width(contentWidth/3 - 2).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render("🎨 Palet Warna / Tema:"),
-			st.Subtitle.Render("Gunakan [1-3] atau panah untuk memilih"),
+			st.Title.Render("🎨 Tema Warna:"),
 			"",
 			strings.Join(themeItems, "\n"),
 		),
 	)
 
-	// 2. WM Model Selector Box
+	// 2. WM Mode Selector
+	wmNames := []string{"🪟 Floating Window", "🔲 Tiling 2-Kolom", "📋 Card Grid"}
 	var wmItems []string
 	for i, name := range wmNames {
 		cursor := "  "
@@ -67,76 +64,52 @@ func RenderSettings(currentTheme styles.ThemeMode, currentWM WMMode, selectedRow
 		}
 		wmItems = append(wmItems, style.Render(cursor+name))
 	}
-	wmBox := st.Card.Width(contentWidth/2 - 2).Render(
+	wmBox := st.Card.Width(contentWidth/3 - 2).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render("🖥️ Model Window Manager (WM):"),
-			st.Subtitle.Render("Gunakan [4-6] atau panah untuk memilih"),
+			st.Title.Render("🖥️ Model Window Manager:"),
 			"",
 			strings.Join(wmItems, "\n"),
 		),
 	)
 
-	topRow := lipgloss.JoinHorizontal(lipgloss.Top, themeBox, "  ", wmBox)
-
-	// 3. LIVE PREVIEW BOX
-	var previewDiagram string
-	var previewDesc string
-	switch currentWM {
-	case WMFloating:
-		previewDiagram = `
- ┌────────────────────────────────────────────────────────┐
- │ 🏝️ BUMIAYU    [Host: odroid-c2]   [RAM: 24%]   12:00  │
- ├────────────────────────────────────────────────────────┤
- │                                                        │
- │          ┌──────────────────────────────┐              │
- │          │  📦 TOKO APLIKASI            │              │
- │          ├──────────────────────────────┤              │
- │          │  ▶ Docker Engine  [Pasang]   │              │
- │          │    Nginx Server   [Hapus]    │              │
- │          │    WireGuard VPN  [Pasang]   │              │
- │          └──────────────────────────────┘              │
- │                                                        │
- ├────────────────────────────────────────────────────────┤
- │ [1] Desktop  [2] Toko App  [3] Pengaturan  [4] Panduan │
- └────────────────────────────────────────────────────────┘`
-		previewDesc = "Model Floating: Jendela aplikasi muncul anggun di tengah desktop dengan taskbar di bawah. Tampilan sangat bersih, rapi, dan mudah dimengerti."
-
-	case WMTiling:
-		previewDiagram = `
- ┌────────────────────────────────────────────────────────┐
- │ 🏝️ BUMIAYU DESKTOP          [RAM: 480MB] [Suhu: 44.5°C] │
- ├─────────────────────────┬──────────────────────────────┤
- │  MENU WORKSPACE         │  DETAIL & AKSI APLIKASI      │
- │  ─────────────────      │  ──────────────────────      │
- │  ▶ [1] Toko Aplikasi    │  Docker Container Engine     │
- │    [2] Status Sistem    │  Status: Belum Terpasang     │
- │    [3] Pengaturan       │  Tekan [Enter] untuk Pasang  │
- │    [4] Petunjuk         │  RAM Terpakai: ~15 MB        │
- └─────────────────────────┴──────────────────────────────┘`
-		previewDesc = "Model Tiling: Layar terbagi dalam 2 kolom terstruktur. Sisi kiri untuk menu cepat dan sisi kanan untuk layar kerja utama."
-
-	case WMCardGrid:
-		previewDiagram = `
- ┌────────────────────────────────────────────────────────┐
- │ 🏝️ BUMIAYU DESKTOP GRID                                │
- ├────────────────────────────┬───────────────────────────┤
- │ 🏥 STATUS SISTEM           │ 📦 APLIKASI CEPAT         │
- │ • CPU: 12%  • RAM: 480 MB  │ • Docker: Belum Pasang    │
- │ • Suhu: 44.5°C (Normal)    │ • Nginx:  Aktif Berjalan  │
- ├────────────────────────────┼───────────────────────────┤
- │ 🛡️ KEAMANAN & FIREWALL     │ ⚡ AKSI SISTEM             │
- │ • UFW: Aktif Terlindungi   │ • [I] Pasang Aplikasi Baru│
- └────────────────────────────┴───────────────────────────┘`
-		previewDesc = "Model Card Grid: Tampilan kartu-kartu ringkas modern dengan informasi kunci yang mudah dicerna tanpa membuat bingung."
+	// 3. Wallpaper Selector
+	wpNames := []string{
+		"🌄 Seni Bumiayu: Gunung Slamet",
+		"🌾 Seni Bumiayu: Sawah Terasering",
+		"🏮 Seni Bumiayu: Lentera Senja",
+		"🌌 Seni Bumiayu: Malam Bintang",
+		"⏰ Dinamis Waktu (Day/Night)",
+		"🖼️ Generator Foto ke Pixel Art",
 	}
+	var wpItems []string
+	for i, name := range wpNames {
+		cursor := "  "
+		style := st.RowNormal
+		if selectedRow == i+6 {
+			cursor = "▶ "
+			style = st.RowSelected
+		}
+		wpItems = append(wpItems, style.Render(cursor+name))
+	}
+	wpBox := st.Card.Width(contentWidth/3 - 2).Render(
+		lipgloss.JoinVertical(lipgloss.Left,
+			st.Title.Render("🖼️ Mode Wallpaper:"),
+			"",
+			strings.Join(wpItems, "\n"),
+		),
+	)
 
+	topRow := lipgloss.JoinHorizontal(lipgloss.Top, themeBox, " ", wmBox, " ", wpBox)
+
+	// 4. Live Wallpaper Art Preview Box
+	activeArtwork := wallpaper.GetCurrentWallpaper(wpType, wpPreset)
 	previewCard := st.CardActive.Width(contentWidth).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Badge.Render("👁️ PRATINJAU LANGSUNG (LIVE PREVIEW)"),
-			fmt.Sprintf("\n%s\n", previewDiagram),
-			st.Subtitle.Render(previewDesc),
+			st.Badge.Render("🖼️ PRATINJAU WALLPAPER TERMINAL AKTIF:"),
 			"",
-			st.RowNormal.Render("⚡ Petunjuk: Tekan [Space] atau [Enter] untuk menerapkan pilihan, atau tekan [T] untuk ganti tema cepat."),
+			activeArtwork,
+			"",
+			st.RowNormal.Render("⌨️ Tombol Navigasi: [↑/↓] Pilih Menu | [Enter/Space] Terapkan | [G] Generator Foto ke Pixel Art"),
 		),
 	)
 
