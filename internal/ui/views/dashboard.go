@@ -34,8 +34,9 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 		return renderAppModal(dialog, st, contentWidth)
 	}
 
-	header := st.Title.Render("🏝️ BUMIAYU DESKTOP LAUNCHER")
-	sub := st.Subtitle.Render("Pusat Kontrol Sistem Ringan & Peluncur Aplikasi Cepat untuk ODROID-C2 & Server Linux")
+	// Header Bar Desktop Elegan
+	header := st.Title.Render("🏝️ BUMIAYU DESKTOP ENVIRONMENT")
+	sub := st.Subtitle.Render("Pusat Kendali Modern Berbasis TUI Ringan untuk ODROID-C2 & Server Linux")
 
 	// Hardware Telemetry Banner (Lengkap & Profesional)
 	deviceType := "Linux Server (" + info.Arch + ")"
@@ -69,7 +70,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 		),
 	)
 
-	// Category Filter Pill Bar
+	// Category Filter Pill Bar (Desain Bersih & Elegan)
 	var filterPills []string
 	for idx, cat := range CategoryFilterList {
 		if idx == activeCategory {
@@ -117,7 +118,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 	}
 
 	// Limit visible app items to terminal height with smooth scrolling
-	maxVisible := 13
+	maxVisible := 12
 	startIdx := 0
 	if selectedApp >= maxVisible {
 		startIdx = selectedApp - maxVisible + 1
@@ -130,21 +131,21 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	listPanel := st.Card.Width(contentWidth/2 - 2).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render(fmt.Sprintf("📦 Katalog Aplikasi (%d/%d Ditampilkan):", len(filteredCatalog), len(catalog))),
+			st.Title.Render(fmt.Sprintf("📦 Katalog Aplikasi Server (%d/%d Aktif):", len(filteredCatalog), len(catalog))),
 			st.Subtitle.Render("Gunakan [↑ / ↓] pilih, [Enter/I] pasang, [X] hapus"),
 			"",
 			strings.Join(visibleList, "\n"),
 		),
 	)
 
-	// Selected App Detail Panel
+	// Selected App Detail Panel (Window Modern & Cantik)
 	var detailPanel string
 	if selectedApp >= 0 && selectedApp < len(filteredCatalog) {
 		app := filteredCatalog[selectedApp].Item
 		statusText := "Belum Terpasang di Server"
 		actionBtn := st.ButtonActive.Render("👉 Tekan [Enter] atau [I] untuk Pasang Sekarang")
 		if app.Installed {
-			statusText = "Sudah Terpasang & Siap Digunakan"
+			statusText = "🟢 Sudah Terpasang & Siap Digunakan"
 			actionBtn = st.PillDanger.Render("🗑️ Tekan [X] untuk Menghapus (Uninstall)")
 		}
 
@@ -161,7 +162,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 		}
 
 		detailContent := fmt.Sprintf(
-			"📌 Aplikasi: %s\n🏷️ Kategori: %s\n📡 Port Layanan: %s\n⚙️ Perintah Sistem: %s\n📊 Status: %s%s\n\n📖 Deskripsi:\n%s\n\n💡 Rekomendasi Senior:\n%s\n\n⚡ Aksi Cepat:\n%s",
+			"📌 Aplikasi       : %s\n🏷️ Kategori       : %s\n📡 Port Layanan   : %s\n⚙️ Perintah Sistem: %s\n📊 Status         : %s%s\n\n📖 Deskripsi Singkat:\n%s\n\n💡 Rekomendasi Senior:\n%s\n\n⚡ Aksi Cepat:\n%s",
 			app.Name, app.Category, app.Port, distroInstallMethod, statusText, thirdPartyBadge,
 			app.Description,
 			app.Insight,
@@ -172,7 +173,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 
 	mainRow := lipgloss.JoinHorizontal(lipgloss.Top, listPanel, "  ", detailPanel)
 
-	// Animated Pixel Art Artwork Banner at Bottom
+	// Living Pixel Art Animation Banner at Bottom (Desain Indah & Artistik)
 	activeArtwork := wallpaper.GetAnimatedPaddyFarmer(animFrame)
 	artBanner := st.Card.Width(contentWidth).Render(
 		lipgloss.JoinVertical(lipgloss.Left,

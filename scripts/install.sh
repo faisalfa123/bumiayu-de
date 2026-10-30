@@ -71,7 +71,7 @@ echo -e "🌐 Memeriksa versi rilis terbaru dari GitHub..."
 LATEST_TAG=$(curl -sSL "https://api.github.com/repos/${REPO}/releases" | grep '"tag_name":' | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
 
 if [ -z "$LATEST_TAG" ]; then
-  LATEST_TAG="v0.9.0-beta.9"
+  LATEST_TAG="v0.9.0-beta.10"
   echo -e "${YELLOW}Menggunakan versi default: ${LATEST_TAG}${NC}"
 else
   echo -e "🚀 Versi ditemukan: ${GREEN}${LATEST_TAG}${NC}"

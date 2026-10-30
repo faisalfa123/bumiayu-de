@@ -74,8 +74,8 @@ func RenderSettings(currentTheme styles.ThemeMode, currentWM WMMode, wpType wall
 
 	// 3. Wallpaper Selector
 	wpNames := []string{
+		"🌾 Animasi Hidup: Sawah & Petani Bumiayu",
 		"🌄 Seni Bumiayu: Gunung Slamet",
-		"🌾 Seni Bumiayu: Sawah Terasering",
 		"🏮 Seni Bumiayu: Lentera Senja",
 		"🌌 Seni Bumiayu: Malam Bintang",
 		"⏰ Dinamis Waktu (Day/Night)",
@@ -101,15 +101,31 @@ func RenderSettings(currentTheme styles.ThemeMode, currentWM WMMode, wpType wall
 
 	topRow := lipgloss.JoinHorizontal(lipgloss.Top, themeBox, " ", wmBox, " ", wpBox)
 
-	// 4. Live Wallpaper Art Preview Box
-	activeArtwork := wallpaper.GetCurrentWallpaper(wpType, wpPreset)
+	// 4. Live Wallpaper Art Preview Box (Indah & Artistik)
+	activeArtwork := wallpaper.GetAnimatedPaddyFarmer(0)
+	if selectedRow >= 6 {
+		wpIdx := selectedRow - 6
+		switch wpIdx {
+		case 1:
+			activeArtwork = wallpaper.GetCurrentWallpaper(wallpaper.WallpaperPreset, wallpaper.SceneGunungSlamet)
+		case 2:
+			activeArtwork = wallpaper.GetCurrentWallpaper(wallpaper.WallpaperPreset, wallpaper.SceneLenteraSenja)
+		case 3:
+			activeArtwork = wallpaper.GetCurrentWallpaper(wallpaper.WallpaperPreset, wallpaper.SceneMalamBintang)
+		case 4:
+			activeArtwork = wallpaper.GetCurrentWallpaper(wallpaper.WallpaperDynamicTime, 0)
+		case 5:
+			activeArtwork = "🖼️ Tekan [Enter] atau [G] untuk memasukkan gambar JPG/PNG dan mengubahnya ke Pixel Art ANSI!"
+		}
+	}
+
 	previewCard := st.CardActive.Width(contentWidth).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
 			st.Badge.Render("🖼️ PRATINJAU WALLPAPER TERMINAL AKTIF:"),
 			"",
 			activeArtwork,
 			"",
-			st.RowNormal.Render("⌨️ Tombol Navigasi: [↑/↓] Pilih Menu | [Enter/Space] Terapkan | [G] Generator Foto ke Pixel Art"),
+			st.RowNormal.Render("⌨️ Tombol Navigasi: [↑/↓] Pilih Menu | [Enter/Space] Terapkan | [G] Generator Foto | [1-3] Pindah Tab"),
 		),
 	)
 
