@@ -29,6 +29,10 @@ jobs:
             arch: arm
             arm: 7
             artifact_name: bumiayu-linux-armv7
+          # Windows x64
+          - os: windows
+            arch: amd64
+            artifact_name: bumiayu-windows-amd64.exe
 
     steps:
       - name: Checkout Source Code
@@ -82,7 +86,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist-release/*/*
-          name: "Bumiayu TUI ${{ github.ref_name }}"
+          name: "Bumiayu TUI ${{ github.ref_name }} (Beta)"
           draft: false
-          prerelease: false
+          prerelease: true
           generate_release_notes: true
