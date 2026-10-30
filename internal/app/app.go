@@ -256,13 +256,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Direct Tab Switching via numbers 1 - 3
 		case "1":
 			m.ActiveWorkspace = components.WorkspaceDashboard
-			return m, tea.ClearScreen
+			return m, tea.Batch(tea.ClearScreen, tickCmd())
 		case "2":
 			m.ActiveWorkspace = components.WorkspaceSettings
-			return m, tea.ClearScreen
+			return m, tea.Batch(tea.ClearScreen, tickCmd())
 		case "3":
 			m.ActiveWorkspace = components.WorkspaceGuide
-			return m, tea.ClearScreen
+			return m, tea.Batch(tea.ClearScreen, tickCmd())
 
 		// Dynamic Arrow Tab Switching (Left / Right)
 		case "left", "h":
@@ -271,11 +271,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.ActiveWorkspace = components.WorkspaceGuide
 			}
-			return m, tea.ClearScreen
+			return m, tea.Batch(tea.ClearScreen, tickCmd())
 
 		case "right", "l":
 			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
-			return m, tea.ClearScreen
+			return m, tea.Batch(tea.ClearScreen, tickCmd())
 
 		case "tab":
 			if m.ActiveWorkspace == components.WorkspaceDashboard {
@@ -283,7 +283,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.CatalogCursor = 0
 			} else {
 				m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
-				return m, tea.ClearScreen
+				return m, tea.Batch(tea.ClearScreen, tickCmd())
 			}
 			return m, nil
 
@@ -301,7 +301,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					m.ActiveWorkspace = components.WorkspaceGuide
 				}
-				return m, tea.ClearScreen
+				return m, tea.Batch(tea.ClearScreen, tickCmd())
 			}
 			return m, nil
 
@@ -531,7 +531,7 @@ func (m *Model) applySettingSelection() {
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.10",
+		ConfigVersion:     "v0.9.0-beta.11",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}

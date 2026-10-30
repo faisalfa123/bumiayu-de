@@ -117,11 +117,11 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 		Bold(true).
 		Foreground(lipgloss.Color("#FFFFFF")).
 		Background(ts.PrimaryColor).
-		Padding(0, 2)
+		Padding(0, 1)
 
 	ts.InactiveTab = lipgloss.NewStyle().
 		Foreground(ts.MutedColor).
-		Padding(0, 2)
+		Padding(0, 1)
 
 	ts.Card = lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).

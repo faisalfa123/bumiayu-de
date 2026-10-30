@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
 	"github.com/charmbracelet/lipgloss"
@@ -40,6 +39,5 @@ func RenderWorkspaceTabs(active Workspace, st styles.ThemeStyles, width int) str
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
-	border := strings.Repeat("─", width)
-	return lipgloss.JoinVertical(lipgloss.Left, row, st.Subtitle.Render(border))
+	return row
 }

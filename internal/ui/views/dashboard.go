@@ -82,7 +82,7 @@ func RenderDashboard(info system.HardwareInfo, catalog []system.AppCatalogItem, 
 	filterBar := lipgloss.JoinHorizontal(lipgloss.Center, filterPills...)
 	filterContainer := st.Card.Width(contentWidth).Render(
 		lipgloss.JoinVertical(lipgloss.Left,
-			st.Title.Render("📂 Filter Kategori [Tekan Tab / Shift+Tab]:"),
+			st.Title.Render("📂 Filter Kategori:"),
 			filterBar,
 		),
 	)
