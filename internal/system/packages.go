@@ -190,6 +190,8 @@ func ExecutePackageAction(action, pkgName string) (string, error) {
 	} else {
 		cmd = exec.Command("apt-get", "remove", "-y", pkgName)
 	}
+	// Important for Debian/DietPi: prevent apt-get from hanging on interactive prompts
+	cmd.Env = append(cmd.Environ(), "DEBIAN_FRONTEND=noninteractive")
 
 	out, err := cmd.CombinedOutput()
 	return string(out), err

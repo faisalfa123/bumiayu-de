@@ -3,7 +3,7 @@
 # ==============================================================================
 
 BINARY_NAME=bumiayu
-VERSION=0.9.0-beta.3
+VERSION=0.9.0-beta.4
 BUILD_DIR=dist
 CMD_DIR=./cmd/bumiayu
 

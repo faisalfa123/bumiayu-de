@@ -13,7 +13,6 @@ type Workspace int
 
 const (
 	WorkspaceDashboard Workspace = iota
-	WorkspaceApps
 	WorkspaceSettings
 	WorkspaceGuide
 )
@@ -25,10 +24,9 @@ func RenderWorkspaceTabs(active Workspace, st styles.ThemeStyles, width int) str
 		name string
 		num  string
 	}{
-		{WorkspaceDashboard, "Desktop & Status", "1"},
-		{WorkspaceApps, "Toko Aplikasi", "2"},
-		{WorkspaceSettings, "Pengaturan Tampilan", "3"},
-		{WorkspaceGuide, "Petunjuk Penggunaan", "4"},
+		{WorkspaceDashboard, "Desktop & Aplikasi (All-in-One)", "1"},
+		{WorkspaceSettings, "Pengaturan Tampilan & WM", "2"},
+		{WorkspaceGuide, "Petunjuk Penggunaan", "3"},
 	}
 
 	var renderedTabs []string

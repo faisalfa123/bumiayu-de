@@ -36,16 +36,16 @@ type Model struct {
 	// Telemetry data
 	Hardware system.HardwareInfo
 
-	// 2. Apps data & cursor & dialog
+	// Apps data & cursor & dialog
 	Catalog       []system.AppCatalogItem
 	CatalogCursor int
 	PackageCount  int
 	AppDialog     views.AppDialogState
 
-	// 3. Settings cursor
+	// Settings cursor
 	SettingsCursor int
 
-	// 4. First-run OOBE Wizard & Recovery State
+	// First-run OOBE Wizard & Recovery State
 	Wizard views.WizardState
 }
 
@@ -58,13 +58,11 @@ func InitialModel() Model {
 		Language:        i18n.ID,
 	}
 
-	// Check configuration & first run
 	cfg, err := config.LoadConfig()
 	if err == nil && cfg.FirstRunCompleted {
 		m.applyUserConfig(cfg)
 		m.Wizard.Active = false
 	} else {
-		// Launch First-run OOBE Wizard
 		m.Wizard.Active = true
 		m.Wizard.HasBackup = config.HasExistingSetup()
 		if m.Wizard.HasBackup {
@@ -172,6 +170,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.saveCurrentConfig()
 			return m, nil
 
+		// Quick Window Manager Mode Toggle (M)
+		case "m", "M":
+			m.WMMode = (m.WMMode + 1) % 3
+			wmName := "Floating Window"
+			if m.WMMode == views.WMTiling {
+				wmName = "Tiling 2-Kolom"
+			} else if m.WMMode == views.WMCardGrid {
+				wmName = "Card Grid"
+			}
+			m.StatusMessage = "Model Window Manager diubah ke: " + wmName
+			m.saveCurrentConfig()
+			return m, nil
+
 		// Open Setup Wizard anytime (W)
 		case "w", "W":
 			m.Wizard.Active = true
@@ -180,17 +191,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Wizard.DraftConfig = config.DefaultConfig()
 			return m, nil
 
-		// Direct Tab Switching via numbers 1 - 4
+		// Direct Tab Switching via numbers 1 - 3
 		case "1":
 			m.ActiveWorkspace = components.WorkspaceDashboard
 			return m, nil
 		case "2":
-			m.ActiveWorkspace = components.WorkspaceApps
-			return m, nil
-		case "3":
 			m.ActiveWorkspace = components.WorkspaceSettings
 			return m, nil
-		case "4":
+		case "3":
 			m.ActiveWorkspace = components.WorkspaceGuide
 			return m, nil
 
@@ -204,11 +212,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "right", "l":
-			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 4
+			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
 			return m, nil
 
 		case "tab":
-			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 4
+			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
 			return m, nil
 
 		case "shift+tab":
@@ -228,9 +236,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.moveCursor(1)
 			return m, nil
 
-		// Action Keys
+		// Action Keys: ENTER or I anywhere in Launcher to Install!
 		case "enter", "i", "I":
-			if m.ActiveWorkspace == components.WorkspaceApps && len(m.Catalog) > 0 {
+			if m.ActiveWorkspace == components.WorkspaceDashboard && len(m.Catalog) > 0 {
 				selected := m.Catalog[m.CatalogCursor]
 				action := "install"
 				if selected.Installed {
@@ -247,7 +255,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "x", "X":
-			if m.ActiveWorkspace == components.WorkspaceApps && len(m.Catalog) > 0 {
+			if m.ActiveWorkspace == components.WorkspaceDashboard && len(m.Catalog) > 0 {
 				selected := m.Catalog[m.CatalogCursor]
 				if selected.Installed {
 					m.AppDialog = views.AppDialogState{
@@ -286,7 +294,6 @@ func (m *Model) handleWizardKeys(key string) (tea.Model, tea.Cmd) {
 		switch m.Wizard.CurrentStep {
 		case views.StepRecovery:
 			if m.Wizard.SelectedRow == 0 {
-				// Recover previous setup
 				cfg, err := config.LoadBackupConfig()
 				if err == nil {
 					m.applyUserConfig(cfg)
@@ -295,7 +302,6 @@ func (m *Model) handleWizardKeys(key string) (tea.Model, tea.Cmd) {
 				m.Wizard.Active = false
 				return m, nil
 			}
-			// Fresh Setup
 			m.Wizard.CurrentStep = views.StepLanguage
 			m.Wizard.SelectedRow = 0
 
@@ -388,7 +394,7 @@ func (m *Model) handleAppModalKeys(key string) (tea.Model, tea.Cmd) {
 
 func (m *Model) moveCursor(delta int) {
 	switch m.ActiveWorkspace {
-	case components.WorkspaceApps:
+	case components.WorkspaceDashboard:
 		m.CatalogCursor = clamp(m.CatalogCursor+delta, 0, len(m.Catalog)-1)
 	case components.WorkspaceSettings:
 		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 5)
@@ -408,7 +414,7 @@ func (m *Model) applySettingSelection() {
 
 func (m *Model) saveCurrentConfig() {
 	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.3",
+		ConfigVersion:     "v0.9.0-beta.4",
 		FirstRunCompleted: true,
 		AutoStartSSH:      false,
 	}
@@ -477,9 +483,7 @@ func (m Model) View() string {
 	var currentView string
 	switch m.ActiveWorkspace {
 	case components.WorkspaceDashboard:
-		currentView = views.RenderDashboard(m.Hardware, m.WMMode, st, m.Language, width, height)
-	case components.WorkspaceApps:
-		currentView = views.RenderApps(m.Catalog, m.CatalogCursor, m.PackageCount, m.AppDialog, st, m.Language, width, height)
+		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.AppDialog, m.WMMode, st, m.Language, width, height)
 	case components.WorkspaceSettings:
 		currentView = views.RenderSettings(m.ThemeMode, m.WMMode, m.SettingsCursor, st, width, height)
 	case components.WorkspaceGuide:
