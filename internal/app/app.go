@@ -334,19 +334,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter", "i", "I":
 				if m.CommerceSidebarCursor == 2 {
 					// Pasang / Buka Immich Toolkit
+					var targetApp system.AppCatalogItem
+					found := false
 					for _, item := range m.Catalog {
 						if item.ID == "immich-sbc" {
-							action := "install"
-							if item.Installed {
-								action = "uninstall"
-							}
-							m.AppDialog = views.AppDialogState{
-								Active: true,
-								Action: action,
-								App:    item,
-							}
+							targetApp = item
+							found = true
 							break
 						}
+					}
+					if !found {
+						targetApp = system.AppCatalogItem{
+							ID:          "immich-sbc",
+							Name:        "Immich SBC Optimizer (ODROID-C2)",
+							Category:    "Foto & Cloud",
+							PackageName: "immich-sbc-tool",
+							Installed:   system.IsPackageInstalled("immich-sbc-tool", "immich-sbc"),
+							Insight:     "Rekomendasi Utama! Dirancang khusus untuk ODROID-C2 (ARM64) 2GB RAM agar Immich berjalan lancar tanpa OOM.",
+						}
+					}
+					action := "install"
+					if targetApp.Installed {
+						action = "uninstall"
+					}
+					m.AppDialog = views.AppDialogState{
+						Active: true,
+						Action: action,
+						App:    targetApp,
 					}
 					return m, nil
 				}

@@ -34,7 +34,7 @@ func GetAppCatalog() []AppCatalogItem {
 			Category:     "Foto & Cloud",
 			Description:  "Toolkit Immich resmi FaisalFa123 untuk SBC & ODROID-C2: auto-backup DB, zero data loss, transcode x265/HEIC/RAW, optimasi RAM low-end, dan auto-rollback.",
 			PackageName:  "immich-sbc-tool",
-			DietPiID:     "215",
+			DietPiID:     "",
 			ArchPkg:      "immich-sbc-tool",
 			Port:         "2283 (Web)",
 			RiskLevel:    "Rendah",
@@ -785,6 +785,11 @@ func GetAppCatalog() []AppCatalogItem {
 }
 
 // checkPackageInstalled checks if package is installed via fast lookup
+// IsPackageInstalled checks if a binary or package is installed
+func IsPackageInstalled(pkg, id string) bool {
+	return checkPackageInstalled(pkg, id)
+}
+
 func checkPackageInstalled(pkg, id string) bool {
 	if runtime.GOOS != "linux" {
 		return id == "docker" || id == "nginx" || id == "git" || id == "htop" || id == "tailscale" || id == "samba" || id == "immich-sbc"
@@ -825,7 +830,64 @@ func ExecutePackageAction(action string, item AppCatalogItem) (string, error) {
 
 	distro := DetectDistro()
 
-	// 1. If running on DietPi, prioritize native dietpi-software
+	// 1. Special 3rd-Party Handling (Priority over generic package managers)
+	if item.IsThirdParty {
+		if action == "uninstall" {
+			if item.ID == "immich-sbc" {
+				cmd := exec.Command("bash", "-c", "rm -rf /opt/immich-sbc-tool /usr/local/bin/immich-sbc-tool /etc/bumiayu/hooks.d/immich.sh")
+				out, err := cmd.CombinedOutput()
+				if err != nil && len(out) == 0 {
+					return "Gagal menghapus Immich SBC: " + err.Error(), err
+				}
+				return "Immich SBC Optimizer berhasil dihapus dari sistem.\n" + string(out), nil
+			}
+		} else if action == "install" {
+			switch item.ID {
+			case "immich-sbc":
+				// Official immich-odroid-c2 optimizer and manager installer
+				cmd := exec.Command("bash", "-c", "curl -fsSL https://raw.githubusercontent.com/faisalfa123/immich-odroid-c2/main/install.sh | bash")
+				out, err := cmd.CombinedOutput()
+				if err != nil && len(out) == 0 {
+					return "Gagal mengunduh atau menjalankan installer Immich SBC: " + err.Error(), err
+				}
+				return string(out), err
+			case "immich":
+				cmd := exec.Command("bash", "-c", "mkdir -p /opt/immich-app && cd /opt/immich-app && wget -O docker-compose.yml https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml && wget -O .env https://github.com/immich-app/immich/releases/latest/download/example.env && docker compose up -d")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			case "vaultwarden":
+				cmd := exec.Command("bash", "-c", "docker run -d --name vaultwarden -v /vw-data/:/data/ --restart always -p 8001:80 vaultwarden/server:latest")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			case "uptimekuma":
+				cmd := exec.Command("bash", "-c", "docker run -d --restart=always -p 3001:3001 -v uptime-kuma:/app/data --name uptime-kuma louislam/uptime-kuma:latest")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			case "tailscale":
+				cmd := exec.Command("bash", "-c", "curl -fsSL https://tailscale.com/install.sh | sh")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			case "caddy":
+				cmd := exec.Command("bash", "-c", "apt-get install -y debian-keyring debian-archive-keyring apt-transport-https && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && apt-get update && apt-get install -y caddy")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			case "cloudflared":
+				cmd := exec.Command("bash", "-c", "curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared bullseye main' | tee /etc/apt/sources.list.d/cloudflared.list && apt-get update && apt-get install -y cloudflared")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			case "portainer":
+				cmd := exec.Command("bash", "-c", "docker volume create portainer_data && docker run -d -p 9000:9000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			case "filebrowser":
+				cmd := exec.Command("bash", "-c", "curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash")
+				out, err := cmd.CombinedOutput()
+				return string(out), err
+			}
+		}
+	}
+
+	// 2. If running on DietPi, prioritize native dietpi-software
 	if distro == DistroDietPi && item.DietPiID != "" {
 		if _, err := exec.LookPath("dietpi-software"); err == nil {
 			var cmd *exec.Cmd
@@ -855,57 +917,6 @@ func ExecutePackageAction(action string, item AppCatalogItem) (string, error) {
 			if err == nil || len(out) > 0 {
 				return string(out), err
 			}
-		}
-	}
-
-	// 3. Verified 3rd-party uninstaller
-	if item.IsThirdParty && action == "uninstall" {
-		if item.ID == "immich-sbc" {
-			cmd := exec.Command("sh", "-c", "rm -rf /opt/immich-sbc-tool /usr/local/bin/immich-sbc-tool /etc/bumiayu/hooks.d/immich.sh")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		}
-	}
-	if item.IsThirdParty && action == "install" {
-		switch item.ID {
-		case "immich-sbc":
-			// Official immich-odroid-c2 optimizer and manager installer
-			cmd := exec.Command("sh", "-c", "curl -fsSL https://raw.githubusercontent.com/faisalfa123/immich-odroid-c2/main/install.sh | sudo bash")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "immich":
-			// If not on DietPi, deploy Immich official docker compose stack
-			cmd := exec.Command("sh", "-c", "mkdir -p /opt/immich-app && cd /opt/immich-app && wget -O docker-compose.yml https://github.com/immich-app/immich/releases/latest/download/docker-compose.yml && wget -O .env https://github.com/immich-app/immich/releases/latest/download/example.env && docker compose up -d")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "vaultwarden":
-			cmd := exec.Command("sh", "-c", "docker run -d --name vaultwarden -v /vw-data/:/data/ --restart always -p 8001:80 vaultwarden/server:latest")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "uptimekuma":
-			cmd := exec.Command("sh", "-c", "docker run -d --restart=always -p 3001:3001 -v uptime-kuma:/app/data --name uptime-kuma louislam/uptime-kuma:latest")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "tailscale":
-			cmd := exec.Command("sh", "-c", "curl -fsSL https://tailscale.com/install.sh | sh")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "caddy":
-			cmd := exec.Command("sh", "-c", "apt-get install -y debian-keyring debian-archive-keyring apt-transport-https && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list && apt-get update && apt-get install -y caddy")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "cloudflared":
-			cmd := exec.Command("sh", "-c", "curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null && echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared bullseye main' | tee /etc/apt/sources.list.d/cloudflared.list && apt-get update && apt-get install -y cloudflared")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "portainer":
-			cmd := exec.Command("sh", "-c", "docker volume create portainer_data && docker run -d -p 9000:9000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
-		case "filebrowser":
-			cmd := exec.Command("sh", "-c", "curl -fsSL https://raw.githubusercontent.com/filebrowser/get/master/get.sh | bash")
-			out, err := cmd.CombinedOutput()
-			return string(out), err
 		}
 	}
 
