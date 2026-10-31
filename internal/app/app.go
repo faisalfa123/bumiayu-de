@@ -11,6 +11,7 @@ import (
 	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
 	"github.com/bumiayu/bumiayu-de/internal/ui/views"
 	"github.com/bumiayu/bumiayu-de/internal/ui/wallpaper"
+	"github.com/bumiayu/bumiayu-de/internal/web"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -60,13 +61,16 @@ type Model struct {
 	CurrentScreen         ScreenMode
 	AlexisCursor          int
 	CommerceSidebarCursor int
+	CurrentIPadTab        views.IPadTab
+	WebServerPort         int
 }
 
-// ScreenMode defines whether we are on Alexis Grid Launcher or Commerce Dashboard
+// ScreenMode defines whether we are on Alexis Grid Launcher, Commerce Dashboard, or iPadOS Control Center
 type ScreenMode int
 
 const (
-	ScreenAlexisGrid ScreenMode = iota
+	ScreenIPadDashboard ScreenMode = iota // Default Clean Light Web Dashboard
+	ScreenAlexisGrid
 	ScreenCommerceDashboard
 )
 
@@ -74,12 +78,15 @@ const (
 func InitialModel() Model {
 	m := Model{
 		ActiveWorkspace: components.WorkspaceDashboard,
-		ThemeMode:       styles.ThemeLight,
+		ThemeMode:       styles.ThemeMacLight,
 		WMMode:          views.WMFloating,
 		WallpaperType:   wallpaper.WallpaperDynamicTime,
 		WallpaperPreset: wallpaper.SceneGunungSlamet,
 		Language:        i18n.ID,
 		ImageInputPath:  "/tmp/wallpaper.jpg",
+		CurrentScreen:   ScreenIPadDashboard,
+		CurrentIPadTab:  views.IPadTabDashboard,
+		WebServerPort:   8080,
 	}
 
 	cfg, err := config.LoadConfig()
@@ -97,6 +104,11 @@ func InitialModel() Model {
 		m.Wizard.DraftConfig = config.DefaultConfig()
 	}
 
+	if cfg.WebServerPort > 0 {
+		m.WebServerPort = cfg.WebServerPort
+	}
+	web.StartWebServer(m.WebServerPort)
+
 	m.refreshAllData()
 	return m
 }
@@ -107,8 +119,10 @@ func (m *Model) applyUserConfig(cfg config.UserConfig) {
 		m.ThemeMode = styles.ThemeWarm
 	case "dark":
 		m.ThemeMode = styles.ThemeDark
+	case "classic":
+		m.ThemeMode = styles.ThemeClassic
 	default:
-		m.ThemeMode = styles.ThemeLight
+		m.ThemeMode = styles.ThemeMacLight
 	}
 
 	switch cfg.WMModel {
@@ -144,13 +158,13 @@ func (m *Model) refreshAllData() {
 }
 
 func tickCmd() tea.Cmd {
-	// 24 FPS = 1000ms / 24 ≈ 41.6ms
-	return tea.Tick(time.Millisecond*42, func(t time.Time) tea.Msg {
+	// 30 FPS = 1000ms / 30 ≈ 33.3ms
+	return tea.Tick(time.Millisecond*33, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
 }
 
-// Init starts the Bubble Tea loop with smooth 24fps tick
+// Init starts the Bubble Tea loop with smooth 30fps tick
 func (m Model) Init() tea.Cmd {
 	return tickCmd()
 }
@@ -165,8 +179,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TickMsg:
 		m.AnimFrame++
-		// Polling hardware setiap ~1.5 detik (36 frame @ 24fps) agar CPU hemat daya
-		if m.AnimFrame%36 == 0 {
+		// Polling hardware setiap ~1.5 detik (45 frame @ 30fps) agar CPU hemat daya
+		if m.AnimFrame%45 == 0 {
 			m.Hardware = system.GetHardwareInfo()
 		}
 		return m, tickCmd()
@@ -224,7 +238,158 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleAppModalKeys(key)
 		}
 
-		// 4. SCREEN MODE NAVIGATION (Alexis Icons vs Commerce Dashboard)
+		// 4. SCREEN MODE NAVIGATION (iPadOS Top Tab Dashboard by Default)
+		if m.CurrentScreen == ScreenIPadDashboard {
+			switch key {
+			case "ctrl+c", "q":
+				return m, tea.Quit
+			case "1":
+				m.CurrentIPadTab = views.IPadTabDashboard
+				return m, nil
+			case "2":
+				m.CurrentIPadTab = views.IPadTabApps
+				return m, nil
+			case "3":
+				m.CurrentIPadTab = views.IPadTabImmich
+				return m, nil
+			case "4":
+				m.CurrentIPadTab = views.IPadTabNetwork
+				return m, nil
+			case "5":
+				m.CurrentIPadTab = views.IPadTabSecurity
+				return m, nil
+			case "6":
+				m.CurrentIPadTab = views.IPadTabSettings
+				return m, nil
+			case "left", "h":
+				if m.CurrentIPadTab > 0 {
+					m.CurrentIPadTab--
+				} else {
+					m.CurrentIPadTab = views.IPadTabSettings
+				}
+				return m, nil
+			case "right", "l":
+				if m.CurrentIPadTab < views.IPadTabSettings {
+					m.CurrentIPadTab++
+				} else {
+					m.CurrentIPadTab = views.IPadTabDashboard
+				}
+				return m, nil
+			case "tab":
+				if m.CurrentIPadTab == views.IPadTabApps {
+					filtered := m.getFilteredCatalog()
+					if len(filtered) > 0 {
+						m.CatalogCursor = (m.CatalogCursor + 1) % len(filtered)
+					}
+				} else {
+					if m.CurrentIPadTab < views.IPadTabSettings {
+						m.CurrentIPadTab++
+					} else {
+						m.CurrentIPadTab = views.IPadTabDashboard
+					}
+				}
+				return m, nil
+			case "w", "W", "up", "k":
+				if m.CurrentIPadTab == views.IPadTabApps {
+					if m.CatalogCursor > 0 {
+						m.CatalogCursor--
+					}
+				}
+				return m, nil
+			case "s", "S", "down", "j":
+				if m.CurrentIPadTab == views.IPadTabApps {
+					if m.CatalogCursor < len(m.Catalog)-1 {
+						m.CatalogCursor++
+					}
+				}
+				return m, nil
+			case "enter", "i", "I":
+				if m.CurrentIPadTab == views.IPadTabImmich {
+					// Pasang / Buka Immich Toolkit
+					var targetApp system.AppCatalogItem
+					found := false
+					for _, item := range m.Catalog {
+						if item.ID == "immich-sbc" {
+							targetApp = item
+							found = true
+							break
+						}
+					}
+					if !found {
+						targetApp = system.AppCatalogItem{
+							ID:          "immich-sbc",
+							Name:        "Immich SBC Optimizer (ODROID-C2)",
+							Category:    "Foto & Cloud",
+							PackageName: "immich-sbc-tool",
+							Installed:   system.IsPackageInstalled("immich-sbc-tool", "immich-sbc"),
+							Insight:     "Rekomendasi Utama! Dirancang khusus untuk ODROID-C2 (ARM64) 2GB RAM agar Immich berjalan lancar tanpa OOM.",
+						}
+					}
+					action := "install"
+					if targetApp.Installed {
+						action = "uninstall"
+					}
+					m.AppDialog = views.AppDialogState{
+						Active: true,
+						Action: action,
+						App:    targetApp,
+					}
+					return m, nil
+				}
+				if m.CurrentIPadTab == views.IPadTabApps {
+					filtered := m.getFilteredCatalog()
+					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
+						selected := filtered[m.CatalogCursor]
+						action := "install"
+						if selected.Installed {
+							action = "uninstall"
+						}
+						m.AppDialog = views.AppDialogState{
+							Active: true,
+							Action: action,
+							App:    selected,
+						}
+					}
+					return m, nil
+				}
+				return m, nil
+			case "x", "X":
+				if m.CurrentIPadTab == views.IPadTabImmich {
+					m.AppDialog = views.AppDialogState{
+						Active: true,
+						Action: "uninstall",
+						App: system.AppCatalogItem{
+							ID:          "immich-sbc",
+							Name:        "Immich SBC Optimizer (ODROID-C2)",
+							Category:    "Foto & Cloud",
+							PackageName: "immich-sbc-tool",
+							Installed:   true,
+						},
+					}
+					return m, nil
+				}
+				if m.CurrentIPadTab == views.IPadTabApps {
+					filtered := m.getFilteredCatalog()
+					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
+						selected := filtered[m.CatalogCursor]
+						if selected.Installed {
+							m.AppDialog = views.AppDialogState{
+								Active: true,
+								Action: "uninstall",
+								App:    selected,
+							}
+						}
+					}
+					return m, nil
+				}
+			case "t", "T":
+				m.ThemeMode = (m.ThemeMode + 1) % 4
+				return m, nil
+			}
+			return m, nil
+		}
+
+		// 5. SCREEN MODE NAVIGATION (Alexis Icons vs Commerce Dashboard)
 		if m.CurrentScreen == ScreenAlexisGrid {
 			switch key {
 			case "ctrl+c", "q":
@@ -602,8 +767,8 @@ func (m *Model) handleWizardKeys(key string) (tea.Model, tea.Cmd) {
 				m.ThemeMode = styles.ThemeDark
 				m.Wizard.DraftConfig.Theme = "dark"
 			default:
-				m.ThemeMode = styles.ThemeLight
-				m.Wizard.DraftConfig.Theme = "light"
+				m.ThemeMode = styles.ThemeMacLight
+				m.Wizard.DraftConfig.Theme = "mac"
 			}
 			m.Wizard.CurrentStep = views.StepWM
 			m.Wizard.SelectedRow = 0
@@ -816,6 +981,27 @@ func (m Model) View() string {
 	}
 
 	// WEB UI SCREEN MODE RENDERING
+	if m.CurrentScreen == ScreenIPadDashboard {
+		content := views.RenderIPadDashboard(
+			m.Hardware,
+			m.Catalog,
+			m.CurrentIPadTab,
+			m.CatalogCursor,
+			m.ActiveCategory,
+			m.AnimFrame,
+			m.AppDialog,
+			m.WebServerPort,
+			st,
+			width,
+			height,
+		)
+		lines := strings.Split(content, "\n")
+		if len(lines) > height {
+			lines = lines[:height]
+		}
+		return strings.Join(lines, "\n")
+	}
+
 	if m.CurrentScreen == ScreenAlexisGrid {
 		content := views.RenderAlexisGrid(m.AlexisCursor, m.AnimFrame, st, width, height)
 		lines := strings.Split(content, "\n")

@@ -9,7 +9,7 @@ import (
 
 type UserConfig struct {
 	ConfigVersion      string `json:"config_version"`
-	Theme              string `json:"theme"`    // "light", "warm", "dark"
+	Theme              string `json:"theme"`    // "light", "warm", "dark", "mac"
 	WMModel            string `json:"wm_model"` // "floating", "tiling", "cardgrid"
 	Language           string `json:"language"` // "id", "en"
 	AutoStartSSH       bool   `json:"autostart_ssh"`
@@ -18,6 +18,8 @@ type UserConfig struct {
 	WallpaperType      string `json:"wallpaper_type"`   // "preset", "dynamic", "custom"
 	WallpaperPreset    int    `json:"wallpaper_preset"` // 0: Slamet, 1: Sawah, 2: Lentera, 3: Malam
 	CustomImagePath    string `json:"custom_image_path"`
+	WebServerEnabled   bool   `json:"web_server_enabled"`
+	WebServerPort      int    `json:"web_server_port"`
 }
 
 // GetConfigDir returns path to ~/.config/bumiayu
@@ -103,13 +105,15 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v0.9.0-beta.16",
-		Theme:             "light",
+		ConfigVersion:     "v0.9.0-beta.17",
+		Theme:             "mac",
 		WMModel:           "floating",
 		Language:          "id",
 		AutoStartSSH:      false,
 		FirstRunCompleted: false,
 		WallpaperType:     "dynamic",
 		WallpaperPreset:   0,
+		WebServerEnabled:  true,
+		WebServerPort:     8080,
 	}
 }

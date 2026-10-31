@@ -5,9 +5,10 @@ import "github.com/charmbracelet/lipgloss"
 type ThemeMode int
 
 const (
-	ThemeLight ThemeMode = iota // Terang (Default)
-	ThemeDark                   // Gelap (Midnight)
-	ThemeWarm                   // Hangat (Cream / Warm Ivory)
+	ThemeMacLight ThemeMode = iota // Mac / iPadOS Clean Light (Default)
+	ThemeDark                      // Gelap (Midnight)
+	ThemeWarm                      // Hangat (Cream / Warm Ivory)
+	ThemeClassic                   // Classic Light
 )
 
 type ThemeStyles struct {
@@ -47,7 +48,19 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 	ts := ThemeStyles{Mode: mode}
 
 	switch mode {
-	case ThemeLight:
+	case ThemeMacLight:
+		// Mac / iPadOS Clean Light Web Theme (Abu-abu Modern #E5E7EB, Putih Salju #FFFFFF, Teks Kontras)
+		ts.BgColor = lipgloss.Color("#E5E7EB")      // Modern iPad Gray 200
+		ts.CardBg = lipgloss.Color("#FFFFFF")       // Pure Snow White Card
+		ts.TextColor = lipgloss.Color("#0F172A")    // Slate 900 High Contrast
+		ts.MutedColor = lipgloss.Color("#475569")   // Slate 600
+		ts.PrimaryColor = lipgloss.Color("#2563EB") // Apple / Royal Blue
+		ts.AccentColor = lipgloss.Color("#0284C7")  // Sky Blue
+		ts.BorderColor = lipgloss.Color("#CBD5E1")  // Clean Slate Border
+		ts.DangerColor = lipgloss.Color("#DC2626")  // Vivid Red
+		ts.SuccessColor = lipgloss.Color("#16A34A") // Emerald Green
+
+	case ThemeClassic:
 		// WebUI Light Theme (Bersih, Kontras Lembut, Card Modern)
 		ts.BgColor = lipgloss.Color("#F1F5F9")      // Slate 100
 		ts.CardBg = lipgloss.Color("#FFFFFF")       // Pure White
