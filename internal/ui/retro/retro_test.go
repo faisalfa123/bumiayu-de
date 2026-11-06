@@ -43,3 +43,48 @@ func TestMarqueeTicker(t *testing.T) {
 		t.Errorf("Expected non-empty marquee tickers")
 	}
 }
+
+func TestAnimatedBackground(t *testing.T) {
+	st := styles.GetTheme(styles.ThemeCyberArcade)
+
+	presets := []AnimatedBGType{
+		BGAuto,
+		BGSawah,
+		BGGunung,
+		BGSakalibel,
+		BGSenja,
+		BGMalam,
+		BGCurug,
+	}
+
+	widths := []int{20, 40, 80, 120}
+	frames := []int{0, 1, 12, 24, 48, 100}
+
+	for _, p := range presets {
+		name := BGName(p)
+		if len(name) == 0 {
+			t.Errorf("Expected non-empty name for preset %s", p)
+		}
+
+		for _, w := range widths {
+			for _, f := range frames {
+				out := RenderAnimatedBackground(p, f, w, st, 4)
+				if len(out) == 0 {
+					t.Errorf("Expected non-empty output for preset %s at width %d, frame %d", p, w, f)
+				}
+			}
+		}
+	}
+
+	// Verify BGOff returns empty string
+	if out := RenderAnimatedBackground(BGOff, 0, 80, st, 4); out != "" {
+		t.Errorf("Expected empty string for BGOff, got %s", out)
+	}
+
+	// Verify NextBG cycles properly
+	cur := BGAuto
+	for i := 0; i < 10; i++ {
+		cur = NextBG(cur)
+	}
+}
+

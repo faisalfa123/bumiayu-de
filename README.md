@@ -65,14 +65,39 @@ Berikut adalah demonstrasi visual antarmuka **Bumiayu TUI** dengan nuansa Window
 * **24 FPS Mulus**: Saat navigasi keyboard, running marquee ticker, animasi equalizer audio retro, dan sprite maskot bergerak di 24 frame per detik (~41ms).
 * **Auto Low-Power Throttling (2 FPS)**: Saat tidak ada interaksi selama 2.5 detik, sistem otomatis memperlambat ke mode standby hemat daya (1–2 FPS). Penggunaan CPU tetap **< 2%** di ODROID-C2 (ARM64) dan sangat hemat kuota SSH!
 
-### 4. 🎨 Palet Estetika Multi-Theme Retro
+### 4. 🌄 Panorama Animasi Background Berjalan 24 FPS (Pixel & ASCII Runners)
+Dapat diubah atau dimatikan kapan saja lewat Spotlight Launcher (`>bg ...`) atau tombol cepat **`B`**:
+* **`>bg auto` (Dinamis Waktu Server)**: Otomatis berganti mengikuti siklus waktu server (Pagi: Fajar Slamet, Siang: Sawah Subur, Sore: Lentera Senja, Awal Malam: Sakalibel Ekspres, Larut: Langit Berbintang).
+* **`>bg sawah`**: Petani membajak sawah terasering & kerbau berjalan menyusuri pematang lembah Slamet.
+* **`>bg gunung`**: Siluet megah Gunung Slamet dengan kawah berasap tipis, awan berarak, dan hutan pinus.
+* **`>bg sakalibel`**: Kereta Api Kamandaka melaju di atas jembatan rel lengkung bersejarah Sakalibel Bumiayu.
+* **`>bg senja`**: Lentera merah bergoyang hangat di langit temaram & angkringan teh poci gula batu.
+* **`>bg malam`**: Langit malam berbintang pekat dengan kilatan meteor periodik & kunang-kunang.
+* **`>bg curug`**: Percikan air terjun Curug Cipendok berarus deras menyejukkan server.
+* **`>bg off`**: Matikan panorama latar belakang untuk tampilan minimalis gelap murni.
+
+### 5. 🔀 3 Model Tata Letak Jendela (Layout Switcher)
+Ubah tata letak jendela kerja secara instan lewat Spotlight Launcher:
+* **`>layout tiling`** — Grid seimbang 2x2 (4 kuadran kerja simetris).
+* **`>layout master`** — Master-Stack (1 panel telemetri besar di kiri + 3 kartu di kanan).
+* **`>layout split`** — Horizontal Split (Baris telemetri atas + Baris proses bawah).
+
+### 6. 🧹 Auto Clean RAM & Cache Scheduler
+Otomatis lepaskan beban RAM yang tertahan di kernel Linux (drop_caches & dentries):
+* **`>autoclean 15m`** — Jadwalkan pembersihan RAM otomatis tiap 15 menit.
+* **`>autoclean 30m`** — Jadwalkan pembersihan RAM otomatis tiap 30 menit.
+* **`>autoclean 1h`** — Jadwalkan pembersihan RAM otomatis tiap 1 jam.
+* **`>clean`** — Pembersihan RAM manual instan sekali tekan.
+* **`>autoclean off`** — Matikan pembersihan otomatis.
+
+### 7. 🎨 Palet Estetika Multi-Theme Retro
 Ganti tema instan cukup dengan menekan tombol **`T`**:
 * **16-Bit Cyber-Arcade (Default)**: Cyan neon `#00F5FF`, Magenta/Violet `#E024A5`, latar Deep Cyber Navy, dan aksen laser amber.
 * **Classic DOS / Norton Commander**: Nuansa server legendaris 90-an dengan double-box border (`╔═╗`), latar biru pekat, font putih/kuning terang.
 * **8-Bit GameBoy Green**: Palet monokrom 4-tingkat hijau klasik khas handheld retro.
 * **Obsidian Dark & Clean Mac Light**: Tema modern minimalis untuk kebutuhan profesional.
 
-### 5. 🛡️ Senior Safety Guard
+### 8. 🛡️ Senior Safety Guard
 Tindakan berisiko tinggi (menghentikan layanan `ssh.service` atau membunuh proses root kritis) secara otomatis dilindungi dialog konfirmasi bertanda bahaya retro untuk mencegah koneksi remote terputus secara tidak sengaja.
 
 ---
@@ -93,6 +118,7 @@ Panduan utama selalu terpampang di kaki layar (*Persistent Footer Quickbar*). Te
 | **`K`** | Hentikan paksa proses (*Kill Process SIGTERM*) dengan Safety Guard |
 | **`U`** | Nyalakan / Matikan Dinding Api (*Toggle UFW Firewall*) |
 | **`T`** | Ganti Tema Tampilan (**Cyber-Arcade** ⇄ **DOS Norton** ⇄ **GameBoy**) |
+| **`B`** | Ganti Animasi Background (**Sawah** ⇄ **Slamet** ⇄ **Sakalibel** ⇄ **Off**) |
 | **`L`** | Ganti Bahasa Antarmuka (**Bahasa Indonesia** ⇄ **English**) |
 | **`?`** | Buka pop-up modal visual **HOW TO PLAY / CONTROLS** |
 | **`Esc`** | Tutup pop-up modal / batalkan aksi / keluar dari mode Zoom |

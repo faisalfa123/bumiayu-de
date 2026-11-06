@@ -22,6 +22,7 @@ type UserConfig struct {
 	WebServerPort      int    `json:"web_server_port"`
 	TargetFPS          int    `json:"target_fps"`           // 24, 60, or 0 (adaptive)
 	AutoCleanMinutes   int    `json:"auto_clean_minutes"`   // 0 (off), 15, 30, 60, 360
+	AnimatedBG         string `json:"animated_bg"`          // "auto", "sawah", "gunung", "sakalibel", "senja", "malam", "curug", "off"
 }
 
 // GetConfigDir returns path to ~/.config/bumiayu
@@ -107,7 +108,7 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v1.0.2",
+		ConfigVersion:     "v1.0.3",
 		Theme:             "cyber",
 		WMModel:           "tiling",
 		Language:          "id",
@@ -119,5 +120,6 @@ func DefaultConfig() UserConfig {
 		WebServerPort:     8080,
 		TargetFPS:         24,
 		AutoCleanMinutes:  0,
+		AnimatedBG:        "auto",
 	}
 }

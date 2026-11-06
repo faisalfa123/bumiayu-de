@@ -34,7 +34,7 @@ type TelemetryMsg struct {
 type AutoCleanMsg string
 
 // AppVersion is the current version displayed with BETA flag
-const AppVersion = "v1.0.2"
+const AppVersion = "v1.0.3"
 
 // Model is the main state of Bumiayu TUI Desktop Environment
 type Model struct {
@@ -46,6 +46,9 @@ type Model struct {
 	StatusMessage string
 	AnimFrame     int
 	LastActive    time.Time // For adaptive 24 FPS engine
+
+	// Animated Background Runner Preset ("auto", "sawah", "gunung", "sakalibel", "senja", "malam", "curug", "off")
+	AnimatedBG string
 
 	// FPS Diagnostics
 	LastTickTime     time.Time
@@ -95,6 +98,7 @@ func InitialModel() Model {
 		FPSCategory:      "24 FPS [AKTIF]",
 		TargetFPSConfig:  24,
 		AutoCleanMinutes: 0,
+		AnimatedBG:       "auto",
 		WebServerPort:    8080,
 		Spotlight:        launcher.NewSpotlightState(),
 		WM: wm.WindowManagerState{
@@ -148,6 +152,12 @@ func (m *Model) applyUserConfig(cfg config.UserConfig) {
 	}
 	m.AutoCleanMinutes = cfg.AutoCleanMinutes
 
+	if cfg.AnimatedBG != "" {
+		m.AnimatedBG = cfg.AnimatedBG
+	} else {
+		m.AnimatedBG = "auto"
+	}
+
 	if cfg.Language == "en" {
 		m.Language = i18n.EN
 	} else {
@@ -193,6 +203,7 @@ func (m *Model) saveCurrentConfig() {
 		WebServerPort:     m.WebServerPort,
 		TargetFPS:         m.TargetFPSConfig,
 		AutoCleanMinutes:  m.AutoCleanMinutes,
+		AnimatedBG:        m.AnimatedBG,
 	}
 	_ = config.SaveConfig(cfg)
 }
@@ -480,6 +491,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.saveCurrentConfig()
 			return m, nil
 
+		case "b", "B":
+			// Quick Cycle Animated Background
+			next := retro.NextBG(retro.AnimatedBGType(m.AnimatedBG))
+			m.AnimatedBG = string(next)
+			m.StatusMessage = fmt.Sprintf("Background: %s", retro.BGName(next))
+			m.saveCurrentConfig()
+			return m, nil
+
 		case "l", "L":
 			// Quick Language Toggle
 			if m.Language == i18n.ID {
@@ -729,6 +748,47 @@ func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.
 		m.StatusMessage = "Auto Clean RAM dinonaktifkan (Manual saja via >clean)"
 		m.saveCurrentConfig()
 
+	// 4. Animated Background Configuration from Spotlight
+	case cmd == "bg_auto":
+		m.AnimatedBG = "auto"
+		m.StatusMessage = "Background: Animasi Dinamis Sesuai Jam Server (Auto)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_sawah":
+		m.AnimatedBG = "sawah"
+		m.StatusMessage = "Background: 🌾 Sawah Terasering & Kerbau Berjalan (24 FPS)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_gunung":
+		m.AnimatedBG = "gunung"
+		m.StatusMessage = "Background: 🏔️ Gunung Slamet Megah & Awan Berarak (24 FPS)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_sakalibel":
+		m.AnimatedBG = "sakalibel"
+		m.StatusMessage = "Background: 🚂 Kereta Api Jembatan Sakalibel (24 FPS)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_senja":
+		m.AnimatedBG = "senja"
+		m.StatusMessage = "Background: 🏮 Lentera Senja & Teh Poci Bumiayu (24 FPS)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_malam":
+		m.AnimatedBG = "malam"
+		m.StatusMessage = "Background: 🌌 Langit Malam Berbintang & Meteor (24 FPS)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_curug":
+		m.AnimatedBG = "curug"
+		m.StatusMessage = "Background: 🌊 Curug Cipendok Air Terjun (24 FPS)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_off":
+		m.AnimatedBG = "off"
+		m.StatusMessage = "Background: Animasi dimatikan (Mode Minimalis Bersih)"
+		m.saveCurrentConfig()
+
 	case strings.HasPrefix(cmd, "jump_"):
 		var idx int
 		fmt.Sscanf(cmd, "jump_%d", &idx)
@@ -809,6 +869,7 @@ func (m Model) View() string {
 		"⚡ BUMIAYU TUI WINDOW MANAGER",
 		fmt.Sprintf("HOST: %s (%s)", m.Hardware.Hostname, m.Hardware.Arch),
 		fmt.Sprintf("TEMA: %s", st.Name),
+		fmt.Sprintf("BG: %s", retro.BGName(retro.AnimatedBGType(m.AnimatedBG))),
 		fmt.Sprintf("FPS: %.0f [%s]", m.CurrentFPS, m.FPSCategory),
 		"TEKAN [SPACE] UNTUK SPOTLIGHT LAUNCHER",
 		"TEKAN [?] UNTUK BANTUAN ARCADE CONTROLS",
@@ -817,6 +878,17 @@ func (m Model) View() string {
 	tickerLine := retro.RenderMarqueeTicker(tickerMsgs, m.AnimFrame, width, st)
 
 	// 4c. Main Workspace: Tiled Layout, Master-Stack, or Zoomed Pane
+	bgBanner := ""
+	layoutHeight := height
+	if m.AnimatedBG != "off" && !m.WM.Zoomed {
+		bgLines := 4
+		if height < 26 {
+			bgLines = 3
+		}
+		layoutHeight = height - bgLines
+		bgBanner = retro.RenderAnimatedBackground(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, st, bgLines)
+	}
+
 	tiledLayout := wm.RenderTiledLayout(
 		m.WM,
 		m.Hardware,
@@ -827,18 +899,29 @@ func (m Model) View() string {
 		m.AnimFrame,
 		st,
 		width,
-		height,
+		layoutHeight,
 	)
 
 	// 4d. Persistent Bottom Quickbar with Shortcuts Help
 	quickBar := help.RenderQuickBar(st, width, m.StatusMessage, m.WM.Zoomed)
 
-	fullContent := lipgloss.JoinVertical(lipgloss.Left,
-		topBar,
-		tickerLine,
-		tiledLayout,
-		quickBar,
-	)
+	var fullContent string
+	if bgBanner != "" {
+		fullContent = lipgloss.JoinVertical(lipgloss.Left,
+			topBar,
+			tickerLine,
+			tiledLayout,
+			bgBanner,
+			quickBar,
+		)
+	} else {
+		fullContent = lipgloss.JoinVertical(lipgloss.Left,
+			topBar,
+			tickerLine,
+			tiledLayout,
+			quickBar,
+		)
+	}
 
 	// Clamp to terminal height so no scrolling occurs inside alternate screen buffer
 	lines := strings.Split(fullContent, "\n")

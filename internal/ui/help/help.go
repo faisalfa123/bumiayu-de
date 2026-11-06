@@ -26,6 +26,7 @@ func RenderQuickBar(st styles.ThemeStyles, width int, statusMessage string, zoom
 		btnKey(zoomStatus, ""),
 		btnKey("1-4", "Panels"),
 		btnKey("T", "Tema"),
+		btnKey("B", "Background"),
 		btnKey("?", "Bantuan"),
 		btnKey("q", "Keluar"),
 	}
@@ -93,6 +94,8 @@ func RenderArcadeHelpModal(st styles.ThemeStyles, width, height int) string {
 		row("Tab / →", "Terima tebakan teks (Ghost-Text Autocomplete)"),
 		row("Enter", "Eksekusi perintah / buka aksi terpilih"),
 		row(">clean", "Macro cepat: Bersihkan Memory Cache RAM"),
+		row(">layout", "Pilih Tampilan: tiling, master, atau split"),
+		row(">bg", "Pilih Animasi: auto, sawah, gunung, sakalibel, senja..."),
 		row(">ports", "Macro cepat: Audit port terbuka publik"),
 		row(">ufw", "Macro cepat: Nyala/Matikan Dinding Api"),
 	)
@@ -103,6 +106,7 @@ func RenderArcadeHelpModal(st styles.ThemeStyles, width, height int) string {
 		row("K", "Hentikan Paksa Proses (Kill Process SIGTERM)"),
 		row("U", "Nyalakan / Matikan Firewall UFW"),
 		row("T", "Ganti Tema (Cyber-Arcade ⇄ DOS ⇄ GameBoy)"),
+		row("B", "Ganti Animasi Background (Sawah ⇄ Slamet ⇄ Senja...)"),
 		row("L", "Ganti Bahasa (Indonesia ⇄ English)"),
 		row("? / Esc", "Tutup jendela bantuan ini / Batalkan"),
 	)
