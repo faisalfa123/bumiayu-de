@@ -20,8 +20,18 @@ const (
 	PaneNetwork
 )
 
+// LayoutMode defines the visual arrangement of windows
+type LayoutMode int
+
+const (
+	LayoutTiling2x2 LayoutMode = iota // Default 2x2 Grid
+	LayoutMasterStack                 // Master Left + Stacked Right
+	LayoutHorizontalSplit             // Horizontal Split 2 rows
+)
+
 // WindowManagerState holds layout, focused pane, zoom state, and scroll cursors
 type WindowManagerState struct {
+	Mode        LayoutMode
 	FocusedPane PaneID
 	Zoomed      bool
 
@@ -90,25 +100,63 @@ func RenderTiledLayout(
 		}
 	}
 
-	// 2x2 Grid Layout
-	colW := (contentWidth - 2) / 2
-	rowH := (contentHeight - 1) / 2
-	if colW < 30 {
-		colW = 30
+	// Layout Mode Switcher:
+	switch wm.Mode {
+	case LayoutMasterStack:
+		// Master Left (60% width, full height) + Stack 3 Cards Right (40% width)
+		masterW := (contentWidth * 3) / 5
+		stackW := contentWidth - masterW - 2
+		if stackW < 28 {
+			stackW = 28
+			masterW = contentWidth - stackW - 2
+		}
+		stackH := (contentHeight - 2) / 3
+		if stackH < 5 {
+			stackH = 5
+		}
+
+		master := renderTelemetryPane(info, animFrame, st, masterW, contentHeight, wm.FocusedPane == PaneTelemetry)
+		s1 := renderServicesPane(services, wm.ServiceCursor, st, stackW, stackH, wm.FocusedPane == PaneServices)
+		s2 := renderProcessesPane(processes, wm.ProcessCursor, st, stackW, stackH, wm.FocusedPane == PaneProcesses)
+		s3 := renderNetworkPane(ports, firewallEnabled, wm.NetworkCursor, st, stackW, stackH, wm.FocusedPane == PaneNetwork)
+		stackCol := lipgloss.JoinVertical(lipgloss.Left, s1, s2, s3)
+		return lipgloss.JoinHorizontal(lipgloss.Top, master, " ", stackCol)
+
+	case LayoutHorizontalSplit:
+		// Horizontal Split: Top row Telemetry & Services, Bottom row Processes & Network
+		topH := contentHeight / 2
+		bottomH := contentHeight - topH - 1
+		halfW := (contentWidth - 2) / 2
+
+		p1 := renderTelemetryPane(info, animFrame, st, halfW, topH, wm.FocusedPane == PaneTelemetry)
+		p2 := renderServicesPane(services, wm.ServiceCursor, st, halfW, topH, wm.FocusedPane == PaneServices)
+		p3 := renderProcessesPane(processes, wm.ProcessCursor, st, halfW, bottomH, wm.FocusedPane == PaneProcesses)
+		p4 := renderNetworkPane(ports, firewallEnabled, wm.NetworkCursor, st, halfW, bottomH, wm.FocusedPane == PaneNetwork)
+
+		row1 := lipgloss.JoinHorizontal(lipgloss.Top, p1, " ", p2)
+		row2 := lipgloss.JoinHorizontal(lipgloss.Top, p3, " ", p4)
+		return lipgloss.JoinVertical(lipgloss.Left, row1, row2)
+
+	default: // LayoutTiling2x2
+		colW := (contentWidth - 2) / 2
+		rowH := (contentHeight - 1) / 2
+		if colW < 30 {
+			colW = 30
+		}
+		if rowH < 8 {
+			rowH = 8
+		}
+
+		p1 := renderTelemetryPane(info, animFrame, st, colW, rowH, wm.FocusedPane == PaneTelemetry)
+		p2 := renderServicesPane(services, wm.ServiceCursor, st, colW, rowH, wm.FocusedPane == PaneServices)
+		p3 := renderProcessesPane(processes, wm.ProcessCursor, st, colW, rowH, wm.FocusedPane == PaneProcesses)
+		p4 := renderNetworkPane(ports, firewallEnabled, wm.NetworkCursor, st, colW, rowH, wm.FocusedPane == PaneNetwork)
+
+		rowTop := lipgloss.JoinHorizontal(lipgloss.Top, p1, " ", p2)
+		rowBottom := lipgloss.JoinHorizontal(lipgloss.Top, p3, " ", p4)
+
+		return lipgloss.JoinVertical(lipgloss.Left, rowTop, rowBottom)
 	}
-	if rowH < 8 {
-		rowH = 8
-	}
-
-	p1 := renderTelemetryPane(info, animFrame, st, colW, rowH, wm.FocusedPane == PaneTelemetry)
-	p2 := renderServicesPane(services, wm.ServiceCursor, st, colW, rowH, wm.FocusedPane == PaneServices)
-	p3 := renderProcessesPane(processes, wm.ProcessCursor, st, colW, rowH, wm.FocusedPane == PaneProcesses)
-	p4 := renderNetworkPane(ports, firewallEnabled, wm.NetworkCursor, st, colW, rowH, wm.FocusedPane == PaneNetwork)
-
-	rowTop := lipgloss.JoinHorizontal(lipgloss.Top, p1, " ", p2)
-	rowBottom := lipgloss.JoinHorizontal(lipgloss.Top, p3, " ", p4)
-
-	return lipgloss.JoinVertical(lipgloss.Left, rowTop, rowBottom)
 }
 
 func getPaneBox(title string, badge string, content string, isFocused bool, st styles.ThemeStyles, width, height int) string {

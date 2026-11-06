@@ -20,6 +20,8 @@ type UserConfig struct {
 	CustomImagePath    string `json:"custom_image_path"`
 	WebServerEnabled   bool   `json:"web_server_enabled"`
 	WebServerPort      int    `json:"web_server_port"`
+	TargetFPS          int    `json:"target_fps"`           // 24, 60, or 0 (adaptive)
+	AutoCleanMinutes   int    `json:"auto_clean_minutes"`   // 0 (off), 15, 30, 60, 360
 }
 
 // GetConfigDir returns path to ~/.config/bumiayu
@@ -105,15 +107,17 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v0.9.0-beta.17",
-		Theme:             "mac",
-		WMModel:           "floating",
+		ConfigVersion:     "v1.0.2",
+		Theme:             "cyber",
+		WMModel:           "tiling",
 		Language:          "id",
 		AutoStartSSH:      false,
-		FirstRunCompleted: false,
+		FirstRunCompleted: true,
 		WallpaperType:     "dynamic",
 		WallpaperPreset:   0,
 		WebServerEnabled:  true,
 		WebServerPort:     8080,
+		TargetFPS:         24,
+		AutoCleanMinutes:  0,
 	}
 }

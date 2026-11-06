@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Version   = "1.0.1-retro"
+	Version   = "1.0.2-retro"
 	BuildArch = "arm64/amd64"
 )
 

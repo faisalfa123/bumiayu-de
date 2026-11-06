@@ -30,6 +30,12 @@ type TelemetryMsg struct {
 	Security  system.SecurityState
 }
 
+// AutoCleanMsg signals completion of periodic memory clean
+type AutoCleanMsg string
+
+// AppVersion is the current version displayed with BETA flag
+const AppVersion = "v1.0.2"
+
 // Model is the main state of Bumiayu TUI Desktop Environment
 type Model struct {
 	width  int
@@ -41,7 +47,17 @@ type Model struct {
 	AnimFrame     int
 	LastActive    time.Time // For adaptive 24 FPS engine
 
-	// Window Manager state (Tiling panes, focus, zoom)
+	// FPS Diagnostics
+	LastTickTime     time.Time
+	CurrentFPS       float64
+	FPSCategory      string
+	TargetFPSConfig  int // 0: Adaptive 24FPS/Eco, 60: Ultra Smooth, 5: Low Eco
+
+	// Auto Clean RAM Configuration
+	AutoCleanMinutes int // 0: Off, 15, 30, 60, 360
+	LastCleanTime    time.Time
+
+	// Window Manager state (Tiling panes, focus, zoom, mode)
 	WM wm.WindowManagerState
 
 	// Unified Spotlight Launcher
@@ -51,9 +67,9 @@ type Model struct {
 	ShowHelp bool
 
 	// Confirmation Safety Guard Dialog
-	ShowConfirm    bool
-	ConfirmPrompt  string
-	ConfirmAction  func()
+	ShowConfirm   bool
+	ConfirmPrompt string
+	ConfirmAction func()
 
 	// Live Telemetry caches
 	Hardware        system.HardwareInfo
@@ -71,12 +87,18 @@ type Model struct {
 // InitialModel initializes the state with default retro config
 func InitialModel() Model {
 	m := Model{
-		ThemeMode:     styles.ThemeCyberArcade, // 16-bit Cyber-Arcade Default
-		Language:      i18n.ID,
-		LastActive:    time.Now(),
-		WebServerPort: 8080,
-		Spotlight:     launcher.NewSpotlightState(),
+		ThemeMode:        styles.ThemeCyberArcade, // 16-bit Cyber-Arcade Default
+		Language:         i18n.ID,
+		LastActive:       time.Now(),
+		LastTickTime:     time.Now(),
+		CurrentFPS:       24.0,
+		FPSCategory:      "24 FPS [AKTIF]",
+		TargetFPSConfig:  24,
+		AutoCleanMinutes: 0,
+		WebServerPort:    8080,
+		Spotlight:        launcher.NewSpotlightState(),
 		WM: wm.WindowManagerState{
+			Mode:        wm.LayoutTiling2x2,
 			FocusedPane: wm.PaneTelemetry,
 			Zoomed:      false,
 		},
@@ -112,6 +134,20 @@ func (m *Model) applyUserConfig(cfg config.UserConfig) {
 		m.ThemeMode = styles.ThemeCyberArcade
 	}
 
+	switch cfg.WMModel {
+	case "master":
+		m.WM.Mode = wm.LayoutMasterStack
+	case "split":
+		m.WM.Mode = wm.LayoutHorizontalSplit
+	default:
+		m.WM.Mode = wm.LayoutTiling2x2
+	}
+
+	if cfg.TargetFPS > 0 {
+		m.TargetFPSConfig = cfg.TargetFPS
+	}
+	m.AutoCleanMinutes = cfg.AutoCleanMinutes
+
 	if cfg.Language == "en" {
 		m.Language = i18n.EN
 	} else {
@@ -134,19 +170,29 @@ func (m *Model) saveCurrentConfig() {
 		themeStr = "mac"
 	}
 
+	wmStr := "tiling"
+	switch m.WM.Mode {
+	case wm.LayoutMasterStack:
+		wmStr = "master"
+	case wm.LayoutHorizontalSplit:
+		wmStr = "split"
+	}
+
 	langStr := "id"
 	if m.Language == i18n.EN {
 		langStr = "en"
 	}
 
 	cfg := config.UserConfig{
-		ConfigVersion:     "v1.0.0-retro",
+		ConfigVersion:     AppVersion,
 		Theme:             themeStr,
-		WMModel:           "hybrid_tiling",
+		WMModel:           wmStr,
 		Language:          langStr,
 		FirstRunCompleted: true,
 		WebServerEnabled:  true,
 		WebServerPort:     m.WebServerPort,
+		TargetFPS:         m.TargetFPSConfig,
+		AutoCleanMinutes:  m.AutoCleanMinutes,
 	}
 	_ = config.SaveConfig(cfg)
 }
@@ -190,13 +236,38 @@ func pollTelemetryCmd() tea.Cmd {
 	}
 }
 
-// Adaptive 24 FPS engine ticker
+// Background timer for Auto Clean RAM
+func scheduleAutoClean(minutes int) tea.Cmd {
+	if minutes <= 0 {
+		return nil
+	}
+	return func() tea.Msg {
+		time.Sleep(time.Duration(minutes) * time.Minute)
+		out, err := system.CleanRAMCache()
+		if err != nil {
+			return AutoCleanMsg("Gagal membersihkan RAM: " + err.Error())
+		}
+		return AutoCleanMsg(out)
+	}
+}
+
+// Dynamic adaptive FPS engine ticker
 func (m Model) tickAdaptive() tea.Cmd {
-	// If user was active in last 2.5 seconds or modal is open: 24 FPS (~41.6ms)
-	// Otherwise: Throttle to 2 FPS (~500ms) to preserve CPU on ARM64/ODROID-C2 & save SSH bandwidth!
-	interval := time.Millisecond * 41 // 24 FPS
-	if !m.Spotlight.Active && !m.ShowHelp && !m.ShowConfirm && time.Since(m.LastActive) > 2500*time.Millisecond {
-		interval = time.Millisecond * 500 // 2 FPS idle mode
+	var interval time.Duration
+
+	switch m.TargetFPSConfig {
+	case 60:
+		// Ultra Smooth 60 FPS (~16.6ms)
+		interval = time.Millisecond * 16
+	case 5:
+		// Static Low Eco Mode (5 FPS = 200ms)
+		interval = time.Millisecond * 200
+	default: // 24 FPS or Adaptive
+		if !m.Spotlight.Active && !m.ShowHelp && !m.ShowConfirm && time.Since(m.LastActive) > 2500*time.Millisecond {
+			interval = time.Millisecond * 500 // 2 FPS idle mode (MODE HEMAT)
+		} else {
+			interval = time.Millisecond * 41 // 24 FPS active
+		}
 	}
 
 	return tea.Tick(interval, func(t time.Time) tea.Msg {
@@ -204,12 +275,14 @@ func (m Model) tickAdaptive() tea.Cmd {
 	})
 }
 
-// Init starts the Bubble Tea loop with smooth 24 FPS tick and background telemetry
+// Init starts the Bubble Tea loop with smooth 24 FPS tick, background telemetry, and auto-clean
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(
-		m.tickAdaptive(),
-		pollTelemetryCmd(),
-	)
+	var cmds []tea.Cmd
+	cmds = append(cmds, m.tickAdaptive(), pollTelemetryCmd())
+	if m.AutoCleanMinutes > 0 {
+		cmds = append(cmds, scheduleAutoClean(m.AutoCleanMinutes))
+	}
+	return tea.Batch(cmds...)
 }
 
 // Update handles keyboard, mouse, and animation events
@@ -222,6 +295,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TickMsg:
 		m.AnimFrame++
+
+		// Rolling FPS Calculation
+		now := time.Now()
+		delta := now.Sub(m.LastTickTime).Seconds()
+		m.LastTickTime = now
+
+		if delta > 0 {
+			instantFPS := 1.0 / delta
+			// Smooth weighted rolling average
+			m.CurrentFPS = (m.CurrentFPS * 0.8) + (instantFPS * 0.2)
+		}
+
+		// Categorize FPS behavior
+		isIdle := time.Since(m.LastActive) > 2500*time.Millisecond && !m.Spotlight.Active && !m.ShowHelp && !m.ShowConfirm
+		if isIdle && m.TargetFPSConfig != 60 {
+			m.FPSCategory = "MODE HEMAT"
+		} else if delta > 0.8 {
+			m.FPSCategory = "HANG / LAG"
+		} else if m.TargetFPSConfig == 60 {
+			m.FPSCategory = "ULTRA SMOOTH"
+		} else {
+			m.FPSCategory = "NORMAL 24FPS"
+		}
+
 		return m, m.tickAdaptive()
 
 	case TelemetryMsg:
@@ -231,6 +328,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Ports = msg.Security.OpenPorts
 		m.FirewallEnabled = msg.Security.UfwActive
 		return m, pollTelemetryCmd()
+
+	case AutoCleanMsg:
+		m.StatusMessage = "🧹 [Auto-Clean]: " + string(msg)
+		m.LastCleanTime = time.Now()
+		m.fetchSystemDataSync()
+		if m.AutoCleanMinutes > 0 {
+			return m, scheduleAutoClean(m.AutoCleanMinutes)
+		}
+		return m, nil
 
 	case tea.KeyMsg:
 		m.LastActive = time.Now() // Wake up adaptive engine to full 24 FPS
@@ -532,6 +638,7 @@ func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.
 	case cmd == "clean_ram":
 		out, _ := system.CleanRAMCache()
 		m.StatusMessage = "⚡ " + out
+		m.LastCleanTime = time.Now()
 		m.fetchSystemDataSync()
 
 	case cmd == "audit_ports":
@@ -564,6 +671,62 @@ func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.
 	case cmd == "next_theme":
 		m.ThemeMode = styles.NextTheme(m.ThemeMode)
 		m.StatusMessage = fmt.Sprintf("Tema aktif: %s", styles.ThemeName(m.ThemeMode))
+		m.saveCurrentConfig()
+
+	// 1. Layout Mode Switcher from Spotlight
+	case cmd == "layout_tiling":
+		m.WM.Mode = wm.LayoutTiling2x2
+		m.StatusMessage = "Layout diubah ke: Tiling Grid 2x2"
+		m.saveCurrentConfig()
+
+	case cmd == "layout_master":
+		m.WM.Mode = wm.LayoutMasterStack
+		m.StatusMessage = "Layout diubah ke: Compact Master-Stack"
+		m.saveCurrentConfig()
+
+	case cmd == "layout_split":
+		m.WM.Mode = wm.LayoutHorizontalSplit
+		m.StatusMessage = "Layout diubah ke: Horizontal Split"
+		m.saveCurrentConfig()
+
+	// 2. FPS Diagnostics Configuration from Spotlight
+	case cmd == "fps_adaptive":
+		m.TargetFPSConfig = 24
+		m.StatusMessage = "Mode FPS: Adaptif 24 FPS (Hemat daya 2 FPS saat diam)"
+		m.saveCurrentConfig()
+
+	case cmd == "fps_60":
+		m.TargetFPSConfig = 60
+		m.StatusMessage = "Mode FPS: Kunci 60 FPS Ultra Smooth"
+		m.saveCurrentConfig()
+
+	case cmd == "fps_eco":
+		m.TargetFPSConfig = 5
+		m.StatusMessage = "Mode FPS: Kunci 5 FPS Statis Hemat Daya"
+		m.saveCurrentConfig()
+
+	// 3. Auto Clean RAM Schedule Configuration from Spotlight
+	case cmd == "autoclean_15m":
+		m.AutoCleanMinutes = 15
+		m.StatusMessage = "Auto Clean RAM dijadwalkan: Tiap 15 Menit"
+		m.saveCurrentConfig()
+		return *m, scheduleAutoClean(15)
+
+	case cmd == "autoclean_30m":
+		m.AutoCleanMinutes = 30
+		m.StatusMessage = "Auto Clean RAM dijadwalkan: Tiap 30 Menit"
+		m.saveCurrentConfig()
+		return *m, scheduleAutoClean(30)
+
+	case cmd == "autoclean_1h":
+		m.AutoCleanMinutes = 60
+		m.StatusMessage = "Auto Clean RAM dijadwalkan: Tiap 1 Jam"
+		m.saveCurrentConfig()
+		return *m, scheduleAutoClean(60)
+
+	case cmd == "autoclean_off":
+		m.AutoCleanMinutes = 0
+		m.StatusMessage = "Auto Clean RAM dinonaktifkan (Manual saja via >clean)"
 		m.saveCurrentConfig()
 
 	case strings.HasPrefix(cmd, "jump_"):
@@ -634,21 +797,26 @@ func (m Model) View() string {
 	}
 
 	// 4. MAIN WINDOW MANAGER INTERFACE
-	// 4a. Topbar: 8-Bit Animated Mascot + Telemetry pills + Live Clock
-	topBar := components.RenderTopBar(m.Hardware, m.AnimFrame, st, m.Language, width)
+	// 4a. Topbar: 8-Bit Mascot + Telemetry pills + Live Rolling FPS Diagnostic + BETA Flag & Version
+	autoCleanStatus := ""
+	if m.AutoCleanMinutes > 0 {
+		autoCleanStatus = fmt.Sprintf("Clean:%dm", m.AutoCleanMinutes)
+	}
+	topBar := components.RenderTopBar(m.Hardware, m.AnimFrame, st, m.Language, width, m.CurrentFPS, m.FPSCategory, AppVersion, autoCleanStatus)
 
 	// 4b. Running 24 FPS Status Marquee Ticker
 	tickerMsgs := []string{
 		"⚡ BUMIAYU TUI WINDOW MANAGER",
 		fmt.Sprintf("HOST: %s (%s)", m.Hardware.Hostname, m.Hardware.Arch),
 		fmt.Sprintf("TEMA: %s", st.Name),
-		"TEKAN [SPACE] UNTUK LAUNCHER",
+		fmt.Sprintf("FPS: %.0f [%s]", m.CurrentFPS, m.FPSCategory),
+		"TEKAN [SPACE] UNTUK SPOTLIGHT LAUNCHER",
 		"TEKAN [?] UNTUK BANTUAN ARCADE CONTROLS",
 		fmt.Sprintf("CPU LOAD: %.2f | RAM: %d MB", m.Hardware.Load1, m.Hardware.MemUsedMB),
 	}
 	tickerLine := retro.RenderMarqueeTicker(tickerMsgs, m.AnimFrame, width, st)
 
-	// 4c. Main Workspace: Tiled Layout or Zoomed Pane
+	// 4c. Main Workspace: Tiled Layout, Master-Stack, or Zoomed Pane
 	tiledLayout := wm.RenderTiledLayout(
 		m.WM,
 		m.Hardware,

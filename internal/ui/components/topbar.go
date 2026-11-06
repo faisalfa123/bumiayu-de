@@ -11,12 +11,16 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// RenderTopBar renders the desktop status bar with animated 8-bit retro mascot and telemetry
-func RenderTopBar(info system.HardwareInfo, animFrame int, st styles.ThemeStyles, lang i18n.Language, width int) string {
-	// Left: Animated Mascot Badge
+// RenderTopBar renders the desktop status bar with animated 8-bit retro mascot, live FPS diagnostics, and BETA flag
+func RenderTopBar(info system.HardwareInfo, animFrame int, st styles.ThemeStyles, lang i18n.Language, width int, fps float64, fpsCategory string, version string, autoCleanStatus string) string {
+	// 1. Left: Animated Mascot Badge + Theme
 	mascotBadge := retro.GetBannerMascot(animFrame, st)
+	themePill := lipgloss.NewStyle().
+		Foreground(st.PrimaryColor).
+		Bold(true).
+		Render(fmt.Sprintf("[%s]", st.Name))
 
-	// Center: Telemetry Pills
+	// 2. Center: Telemetry Pills (Temp, RAM, CPU Load, AutoClean Indicator)
 	var tempPill string
 	if info.TemperatureC > 70 {
 		tempPill = st.PillDanger.Render(fmt.Sprintf("🔥 %.1f°C", info.TemperatureC))
@@ -37,10 +41,46 @@ func RenderTopBar(info system.HardwareInfo, animFrame int, st styles.ThemeStyles
 	}
 
 	cpuPill := st.ButtonNormal.Render(fmt.Sprintf("Load: %.2f", info.Load1))
-	themePill := lipgloss.NewStyle().
-		Foreground(st.PrimaryColor).
+
+	var cleanPill string
+	if autoCleanStatus != "" {
+		cleanPill = lipgloss.NewStyle().
+			Foreground(st.SuccessColor).
+			Bold(true).
+			Render(fmt.Sprintf("🧹 %s", autoCleanStatus))
+	}
+
+	// 3. Right: FPS Diagnostic Pill + BETA Version Badge + Clock
+	var fpsColor lipgloss.Color
+	var fpsBg lipgloss.Color = st.CardBg
+	switch fpsCategory {
+	case "MODE HEMAT":
+		fpsColor = st.AccentColor
+	case "ULTRA SMOOTH":
+		fpsColor = st.SuccessColor
+	case "HANG / LAG":
+		fpsColor = st.DangerColor
+		fpsBg = lipgloss.Color("#450A0A")
+	default: // "NORMAL 24FPS"
+		fpsColor = st.PrimaryColor
+	}
+
+	fpsPill := lipgloss.NewStyle().
 		Bold(true).
-		Render(fmt.Sprintf("[%s]", st.Name))
+		Foreground(fpsColor).
+		Background(fpsBg).
+		Padding(0, 1).
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(fpsColor).
+		Render(fmt.Sprintf("⚡ %.0f FPS [%s]", fps, fpsCategory))
+
+	// BETA Flag with Version
+	betaBadge := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#000000")).
+		Background(st.DangerColor).
+		Padding(0, 1).
+		Render("🚩 BETA " + version)
 
 	clockPill := lipgloss.NewStyle().
 		Bold(true).
@@ -50,8 +90,8 @@ func RenderTopBar(info system.HardwareInfo, animFrame int, st styles.ThemeStyles
 		Render(time.Now().Format("15:04:05"))
 
 	left := lipgloss.JoinHorizontal(lipgloss.Center, mascotBadge, " ", themePill)
-	center := lipgloss.JoinHorizontal(lipgloss.Center, tempPill, " ", ramPill, " ", cpuPill)
-	right := clockPill
+	center := lipgloss.JoinHorizontal(lipgloss.Center, tempPill, " ", ramPill, " ", cpuPill, " ", cleanPill)
+	right := lipgloss.JoinHorizontal(lipgloss.Center, fpsPill, " ", betaBadge, " ", clockPill)
 
 	totalUsed := lipgloss.Width(left) + lipgloss.Width(center) + lipgloss.Width(right)
 	spacing := (width - totalUsed) / 2
