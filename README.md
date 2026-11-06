@@ -1,50 +1,102 @@
-# 🏝️ Bumiayu TUI
+# 🏝️ Bumiayu TUI (Window Manager Edition)
 
-> **Desktop Environment Berbasis TUI (Terminal User Interface) Ultra-Ringan & Ramah SSH**  
-> *Dirancang khusus untuk **ODROID-C2 (ARM64 Amlogic S905)** dan **Server Linux (AMD64 / x86_64)**.*
+> **Terminal Window Manager & Lightweight System Launcher Ultra-Ringan**  
+> *Ditenagai Mesin Animasi Adaptif 24 FPS, Estetika 16-Bit / 8-Bit Retro, Autocomplete Cerdas, dan Ramah SSH.*  
+> *Dirancang khusus untuk **ODROID-C2 (ARM64 Amlogic S905)** & **Linux Server (x86_64 / ARM64)**.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.22%2B-blue.svg)](https://go.dev)
 [![Architecture](https://img.shields.io/badge/Arch-ARM64%20|%20AMD64-cyan.svg)](https://github.com/faisalfa123/bumiayu-de)
 [![RAM Footprint](https://img.shields.io/badge/RAM%20Footprint-~12%20MB-success.svg)](https://github.com/faisalfa123/bumiayu-de)
-[![SSH Friendly](https://img.shields.io/badge/SSH-100%25%20Friendly-purple.svg)](https://github.com/faisalfa123/bumiayu-de)
+[![Engine](https://img.shields.io/badge/Engine-Adaptive%2024%20FPS-purple.svg)](https://github.com/faisalfa123/bumiayu-de)
+[![SSH Friendly](https://img.shields.io/badge/SSH-100%25%20Optimized-orange.svg)](https://github.com/faisalfa123/bumiayu-de)
 
 ---
 
+## 🎬 Tampilan & Demo Animasi
+
+Berikut adalah demonstrasi visual antarmuka **Bumiayu TUI** dengan nuansa Window Manager, layout panel tersusun rapi, indikator equalizer 24 FPS, dan *Unified Spotlight Launcher* dengan fitur *ghost-text autocomplete*:
+
+<div align="center">
+  <img src="assets/demo.svg" alt="Bumiayu TUI 24 FPS Window Manager Demo" width="100%" />
+</div>
+
 ```
-  ____                  _                    _____ _   _ ___ 
- | __ ) _   _ _ __ ___ (_) __ _ _   _ _   _ |_   _| | | |_ _|
- |  _ \| | | | '_ ` _ \| |/ _` | | | | | | |  | | | | | || | 
- | |_) | |_| | | | | | | | (_| | |_| | |_| |  | | | |_| || | 
- |____/ \__,_|_| |_| |_|_|\__,_|\__,_|\__,_|  |_|  \___/|___|
+╔════════════════════════════════════════════════════════════════════════════════════════╗
+║ 👾 (•_•) BUMIAYU-DE [16-Bit Cyber]   ❄️ 42.1°C   RAM: 412/2048 MB (20%)   Load: 0.18    ║
+║ 📡 TICKER: ⚡ BUMIAYU TUI WM  ✦  ADAPTIVE 24 FPS READY  ✦  PRESS [SPACE] FOR LAUNCHER   ║
+╠══════════════════════════════════════╦═════════════════════════════════════════════════╣
+║ 📊 [1] TELEMETRI HARDWARE   [LIVE]   ║ ⚙️ [2] LAYANAN SYSTEMD               [10 Unit] ║
+║ CPU    [████░░░░░░░░░░░░]  25%       ║   ● RUN   ssh.service        4.8MB             ║
+║ RAM    [███░░░░░░░░░░░░░]  20%       ║ ► ● RUN   nginx.service      6.2MB             ║
+║ TEMP   [██████░░░░░░░░░░]  42%       ║   ○ STOP  docker.service     0.0MB             ║
+║ EQ 24F:  ▂▃▄▅   💚 [PULSE OK]        ║ [S]: Start  |  [T]: Stop  |  [R]: Restart       ║
+╠══════════════════════════════════════╬═════════════════════════════════════════════════╣
+║ ⚡ [3] TASK MANAGER (OOM)   [7 Pros] ║ 🛡️ [4] JARINGAN & PORT              [🛡️ UFW ON] ║
+║ 1205  dockerd      84.0MB  OOM:200!  ║   22   tcp  PUBLIK  sshd (OpenSSH Server)       ║
+║ 1350  containerd   42.0MB  OOM:120   ║   80   tcp  PUBLIK  nginx (HTTP Web)            ║
+║ [K]: Kill Process SIGTERM (Protected)║   443  tcp  LOKAL   nginx (HTTPS SSL)           ║
+╠══════════════════════════════════════╩═════════════════════════════════════════════════╣
+║ [Space] Launcher  [Tab/hjkl] Nav  [f] Zoom  [1-4] Panels  [T] Tema  [?] Help  [q] Quit ║
+╚════════════════════════════════════════════════════════════════════════════════════════╝
 ```
-
-## ✨ Latar Belakang & Filosofi "Bumiayu"
-
-**Bumiayu** melambangkan *Bumi yang Ayu* (indah, damai, dan bersahabat). 
-
-Banyak pengguna server mini seperti **ODROID-C2** (quad-core ARM64 Cortex-A53 dengan 2GB DDR3 RAM) kesulitan ketika memasang desktop environment grafis konvensional (seperti XFCE, GNOME, atau LXDE) karena:
-1. Memakan RAM 400 MB - 1.2 GB hanya untuk desktop, memicu **OOM (Out Of Memory) Freeze** saat menjalankan database atau kontainer.
-2. Memerlukan forwarding X11 atau VNC yang lambat dan boros bandwidth internet saat diakses via remote.
-3. Terminal murni tanpa antarmuka visual membuat pengguna pemula merasa cemas dan kesulitan mengaudit port, service, dan hak akses server.
-
-**Bumiayu TUI** hadir sebagai jalan tengah yang sempurna: **Sensasi Desktop Environment penuh dalam jendela terminal**, hemat memori (< 15 MB RAM), responsif seketika via SSH, serta dilengkapi **"Senior Insight"** yang memandu pengguna awam selayaknya didampingi *Senior System Administrator*.
 
 ---
 
-## 🖥️ 7 Ruang Kerja (Workspaces)
+## ✨ Fitur Unggulan
 
-Bumiayu TUI membagi pengelolaan sistem ke dalam 7 panel terintegrasi:
+### 1. 🪟 Nuansa Terminal Window Manager (Hybrid Tiling)
+* **Panel Tiling Terintegrasi**: 4 kuadran kerja utama (Telemetri Hardware, Layanan Systemd, Task Manager OOM, Jaringan & Firewall) tertata otomatis dan rapi.
+* **Active Glow & Shimmer Border**: Panel yang sedang fokus memiliki bingkai neon menyala berdenyut.
+* **Zoom / Fullscreen Toggle (`f`)**: Tekan tombol `f` untuk memperbesar jendela terpilih memenuhi seluruh layar terminal, dan tekan `f` atau `Esc` untuk kembali ke mode tiling.
 
-| No | Ruang Kerja | Fungsi Utama |
-|---|---|---|
-| **1** | 📊 **Dashboard** | Pantau suhu SoC Amlogic ODROID-C2, clock CPU, RAM fisik & swap, load average, serta uptime. |
-| **2** | 📦 **Aplikasi & Paket** | Audit jumlah paket terpasang (APT/dpkg) + 1-Click App Store (Docker, Nginx, WireGuard, Samba, Pi-hole, UFW, dll). |
-| **3** | ⚙️ **Layanan Systemd** | Lihat status service real-time (`Running`, `Stopped`, `Failed`), Start, Stop, Restart, dan baca live logs Journalctl. |
-| **4** | 🛡️ **Aturan & Firewall** | Pengendali Dinding Api (UFW), toggle proteksi, dan audit port terbuka (apakah publik atau lokal). |
-| **5** | 👥 **Pengguna & Role** | Manajemen user, audit hak akses Sudo (Grant/Revoke Admin), dan inspeksi kunci SSH publik. |
-| **6** | 📂 **Berkas & Konfigurasi** | Penjelajah direktori cepat (/etc, /var/log), inspeksi izin file (chmod visual), dan preview isi konfigurasi. |
-| **7** | ⚡ **Task Manager (OOM)** | Pengawas proses dengan filter memori dan deteksi nilai `oom_score` Linux Kernel untuk mencegah freeze sistem. |
+### 2. 🔍 Unified Spotlight Launcher dengan Bantuan Ketik Cerdas
+* **Akses Cepat Cukup Tekan `Space` atau `/`**: Pop-up modal melayang di tengah layar ala *Rofi / Spotlight*.
+* **Ghost-Text Inline Autocomplete**: Saat mengetik `ngi`, sistem langsung menampilkan teks bayangan abu-abu `nx.service`. Cukup tekan **`Tab`** atau **`→`** untuk melengkapi kata!
+* **Fuzzy Search & Typo-Tolerant Correction**: Salah ketik (misal: `ngnx` atau `clea`) tetap akan ditebak dan disarankan ke perintah atau layanan yang tepat.
+* **Quick Actions / Macro**:
+  * `>clean` — Flush memory cache & pagecache Linux kernel.
+  * `>ports` — Audit instan seluruh port terbuka publik dan lokal.
+  * `>ufw` — Nyalakan atau matikan proteksi firewall.
+  * `>kill-oom` — Deteksi dan tembak proses paling boros RAM.
+  * `>theme` — Beralih tema retro instan.
+
+### 3. 🕹️ Mesin Animasi Adaptif 24 FPS (Adaptive Framerate)
+* **24 FPS Mulus**: Saat navigasi keyboard, running marquee ticker, animasi equalizer audio retro, dan sprite maskot bergerak di 24 frame per detik (~41ms).
+* **Auto Low-Power Throttling (2 FPS)**: Saat tidak ada interaksi selama 2.5 detik, sistem otomatis memperlambat ke mode standby hemat daya (1–2 FPS). Penggunaan CPU tetap **< 2%** di ODROID-C2 (ARM64) dan sangat hemat kuota SSH!
+
+### 4. 🎨 Palet Estetika Multi-Theme Retro
+Ganti tema instan cukup dengan menekan tombol **`T`**:
+* **16-Bit Cyber-Arcade (Default)**: Cyan neon `#00F5FF`, Magenta/Violet `#E024A5`, latar Deep Cyber Navy, dan aksen laser amber.
+* **Classic DOS / Norton Commander**: Nuansa server legendaris 90-an dengan double-box border (`╔═╗`), latar biru pekat, font putih/kuning terang.
+* **8-Bit GameBoy Green**: Palet monokrom 4-tingkat hijau klasik khas handheld retro.
+* **Obsidian Dark & Clean Mac Light**: Tema modern minimalis untuk kebutuhan profesional.
+
+### 5. 🛡️ Senior Safety Guard
+Tindakan berisiko tinggi (menghentikan layanan `ssh.service` atau membunuh proses root kritis) secara otomatis dilindungi dialog konfirmasi bertanda bahaya retro untuk mencegah koneksi remote terputus secara tidak sengaja.
+
+---
+
+## 🎮 Panduan Pintasan Keyboard (Controls)
+
+Panduan utama selalu terpampang di kaki layar (*Persistent Footer Quickbar*). Tekan **`?`** kapan saja untuk membuka layar bantuan visual arcade lengkap:
+
+| Tombol | Tindakan |
+|---|---|
+| **`Space`** atau **`/`** | Buka **Unified Spotlight Launcher** (Pencarian & Perintah Cepat) |
+| **`Tab`** / **`→`** | Terima tebakan kata (*Ghost-Text Autocomplete*) di dalam Launcher |
+| **`Tab`** / **`Shift+Tab`** | Pindah fokus antar panel jendela Window Manager |
+| **`h` / `j` / `k` / `l`** atau **Panah** | Navigasi arah (Vim-style navigation) |
+| **`f`** | **Zoom / Fullscreen** panel yang sedang aktif |
+| **`1` - `4`** | Langsung lompat ke Panel 1 s/d 4 |
+| **`S`** / **`T`** / **`R`** | **Start** / **Stop** / **Restart** unit Systemd pada panel layanan |
+| **`K`** | Hentikan paksa proses (*Kill Process SIGTERM*) dengan Safety Guard |
+| **`U`** | Nyalakan / Matikan Dinding Api (*Toggle UFW Firewall*) |
+| **`T`** | Ganti Tema Tampilan (**Cyber-Arcade** ⇄ **DOS Norton** ⇄ **GameBoy**) |
+| **`L`** | Ganti Bahasa Antarmuka (**Bahasa Indonesia** ⇄ **English**) |
+| **`?`** | Buka pop-up modal visual **HOW TO PLAY / CONTROLS** |
+| **`Esc`** | Tutup pop-up modal / batalkan aksi / keluar dari mode Zoom |
+| **`q`** atau **`Ctrl+C`** | Keluar dari Bumiayu TUI |
 
 ---
 
@@ -52,76 +104,16 @@ Bumiayu TUI membagi pengelolaan sistem ke dalam 7 panel terintegrasi:
 
 ### Di ODROID-C2 atau Server Linux (Ubuntu / Debian / DietPi / Armbian):
 
-Cukup jalankan satu perintah berikut di terminal Anda:
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/faisalfa123/bumiayu-de/main/scripts/install.sh | sudo bash
 ```
 
 > **Catatan Pembaruan (Auto-Update):**  
-> Jika Bumiayu TUI sudah pernah terpasang di sistem Anda, menjalankan perintah di atas akan secara otomatis mendeteksinya dan melakukan **instal ulang / pembaruan langsung (auto-update)** ke versi terbaru.
+> Menjalankan perintah di atas pada sistem yang sudah terpasang Bumiayu TUI akan secara otomatis mendeteksi dan memperbaruinya ke versi terbaru.
 
 ---
 
-## 🗑️ Cara Uninstall (Menghapus Bersih)
-
-Jika Anda ingin menghapus Bumiayu TUI dari server Anda:
-
-**Cara 1 (Paling Mudah):**
-```bash
-sudo bumiayu-uninstall
-```
-
-**Cara 2 (Via curl):**
-```bash
-curl -fsSL https://raw.githubusercontent.com/faisalfa123/bumiayu-de/main/scripts/uninstall.sh | sudo bash
-```
-
----
-
-## 🎮 Pintasan Keyboard (Hotkeys)
-
-Bumiayu TUI dirancang untuk navigasi keyboard yang secepat kilat:
-
-| Tombol | Tindakan |
-|---|---|
-| `1` - `7` | Langsung lompat ke Workspace 1 s.d. 7 |
-| `Tab` / `Shift+Tab` | Pindah ke ruang kerja berikutnya / sebelumnya |
-| `↑` / `↓` atau `k` / `j` | Gulir daftar item / layanan / proses |
-| `Enter` / `Spasi` | Buka detail / lihat log Journalctl / buka folder |
-| `L` | Ganti Bahasa Antarmuka secara instan (**Bahasa Indonesia** ⇄ **English**) |
-| `S` | Nyalakan layanan (Start systemd unit) |
-| `T` | Hentikan layanan (Stop systemd unit) |
-| `R` | Mulai ulang layanan (Restart systemd unit) |
-| `U` | Nyalakan / Matikan Dinding Api (Toggle UFW Firewall) |
-| `G` / `V` | Berikan (Grant) / Cabut (Revoke) hak akses Sudo pada pengguna |
-| `K` | Hentikan paksa proses (Kill Process via SIGTERM) |
-| `Esc` | Tutup jendela log / kembali ke menu |
-| `q` atau `Ctrl+C` | Keluar dari Bumiayu TUI |
-
----
-
-## 🌐 Integrasi Otomatis Saat Login SSH
-
-Agar server ODROID-C2 Anda langsung menyapa dengan tampilan Bumiayu TUI setiap kali Anda melakukan SSH, tambahkan baris berikut ke `~/.bashrc`:
-
-```bash
-# Tambahkan ke baris paling bawah ~/.bashrc
-if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ]; then
-    if [ -z "$BUMIAYU_LOADED" ]; then
-        export BUMIAYU_LOADED=1
-        exec bumiayu
-    fi
-fi
-```
-
-Ketika Anda keluar dari Bumiayu TUI (tekan `q`), sesi terminal SSH Anda akan tetap aktif seperti biasa.
-
----
-
-## 🛠️ Kompilasi Mandiri (Cross-Compilation)
-
-Jika Anda ingin membangun binary sendiri dari kode sumber:
+## 🛠️ Kompilasi & Pengujian Mandiri
 
 ```bash
 # Clone repository
@@ -129,23 +121,18 @@ git clone https://github.com/faisalfa123/bumiayu-de.git
 cd bumiayu-de
 
 # Jalankan pengujian unit
-make test
+go test -v ./...
 
-# Kompilasi untuk ODROID-C2 (ARM64 Linux)
-make build-arm64
+# Kompilasi binary
+go build -o bin/bumiayu ./cmd/bumiayu
 
-# Kompilasi untuk Server AMD64 (x86_64 Linux)
-make build-amd64
-
-# Kompilasi seluruh arsitektur sekaligus
-make build-all
+# Jalankan aplikasi
+./bin/bumiayu
 ```
-
-Hasil binary statis siap pakai akan tersedia di folder `dist/`.
 
 ---
 
 ## 📄 Lisensi
 
 Proyek ini dirilis di bawah lisensi terbuka [MIT License](LICENSE).
-Bebas dimodifikasi, didistribusikan, dan digunakan untuk server pribadi maupun enterprise.
+Bebas dimodifikasi, didistribusikan, dan digunakan untuk server rumahan, SBC ODROID, maupun server cloud enterprise.

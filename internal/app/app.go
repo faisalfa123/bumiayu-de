@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -8,21 +9,25 @@ import (
 	"github.com/bumiayu/bumiayu-de/internal/i18n"
 	"github.com/bumiayu/bumiayu-de/internal/system"
 	"github.com/bumiayu/bumiayu-de/internal/ui/components"
+	"github.com/bumiayu/bumiayu-de/internal/ui/help"
+	"github.com/bumiayu/bumiayu-de/internal/ui/launcher"
+	"github.com/bumiayu/bumiayu-de/internal/ui/retro"
 	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
-	"github.com/bumiayu/bumiayu-de/internal/ui/views"
-	"github.com/bumiayu/bumiayu-de/internal/ui/wallpaper"
+	"github.com/bumiayu/bumiayu-de/internal/ui/wm"
 	"github.com/bumiayu/bumiayu-de/internal/web"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// TickMsg triggers telemetry refresh every 2 seconds
+// TickMsg triggers UI frame rendering
 type TickMsg time.Time
 
-// AppActionMsg reports result of background install/uninstall
-type AppActionMsg struct {
-	Logs    string
-	Success bool
+// TelemetryMsg delivers background refreshed hardware data
+type TelemetryMsg struct {
+	Hardware  system.HardwareInfo
+	Services  []system.ServiceItem
+	Processes []system.ProcessItem
+	Security  system.SecurityState
 }
 
 // Model is the main state of Bumiayu TUI Desktop Environment
@@ -30,119 +35,82 @@ type Model struct {
 	width  int
 	height int
 
-	ActiveWorkspace components.Workspace
-	ThemeMode       styles.ThemeMode
-	WMMode          views.WMMode
-	WallpaperType   wallpaper.WallpaperType
-	WallpaperPreset wallpaper.PresetScene
-	Language        i18n.Language
-	StatusMessage   string
+	ThemeMode     styles.ThemeMode
+	Language      i18n.Language
+	StatusMessage string
+	AnimFrame     int
+	LastActive    time.Time // For adaptive 24 FPS engine
 
-	// Telemetry data
-	Hardware system.HardwareInfo
+	// Window Manager state (Tiling panes, focus, zoom)
+	WM wm.WindowManagerState
 
-	// Apps data & cursor & dialog
-	Catalog        []system.AppCatalogItem
-	CatalogCursor  int
-	ActiveCategory int
-	PackageCount   int
-	AppDialog      views.AppDialogState
+	// Unified Spotlight Launcher
+	Spotlight launcher.SpotlightState
 
-	// Settings cursor & image input modal
-	SettingsCursor int
-	ShowImageInput bool
-	ImageInputPath string
-	AnimFrame      int
+	// Arcade Help Modal state ('?' key)
+	ShowHelp bool
 
-	// First-run OOBE Wizard & Recovery State
-	Wizard views.WizardState
+	// Confirmation Safety Guard Dialog
+	ShowConfirm    bool
+	ConfirmPrompt  string
+	ConfirmAction  func()
 
-	// Screen Navigation Modes (WebUI Experience)
-	CurrentScreen         ScreenMode
-	AlexisCursor          int
-	CommerceSidebarCursor int
-	CurrentIPadTab        views.IPadTab
-	WebServerPort         int
+	// Live Telemetry caches
+	Hardware        system.HardwareInfo
+	Services        []system.ServiceItem
+	Processes       []system.ProcessItem
+	Ports           []system.PortAuditItem
+	FirewallEnabled bool
+
+	// Apps & Web server port
+	Catalog       []system.AppCatalogItem
+	CatalogCursor int
+	WebServerPort int
 }
 
-// ScreenMode defines whether we are on Alexis Grid Launcher, Commerce Dashboard, or iPadOS Control Center
-type ScreenMode int
-
-const (
-	ScreenIPadDashboard ScreenMode = iota // Default Clean Light Web Dashboard
-	ScreenAlexisGrid
-	ScreenCommerceDashboard
-)
-
-// InitialModel initializes the state with config or opens wizard if first run
+// InitialModel initializes the state with default retro config
 func InitialModel() Model {
 	m := Model{
-		ActiveWorkspace: components.WorkspaceDashboard,
-		ThemeMode:       styles.ThemeMacLight,
-		WMMode:          views.WMFloating,
-		WallpaperType:   wallpaper.WallpaperDynamicTime,
-		WallpaperPreset: wallpaper.SceneGunungSlamet,
-		Language:        i18n.ID,
-		ImageInputPath:  "/tmp/wallpaper.jpg",
-		CurrentScreen:   ScreenIPadDashboard,
-		CurrentIPadTab:  views.IPadTabDashboard,
-		WebServerPort:   8080,
+		ThemeMode:     styles.ThemeCyberArcade, // 16-bit Cyber-Arcade Default
+		Language:      i18n.ID,
+		LastActive:    time.Now(),
+		WebServerPort: 8080,
+		Spotlight:     launcher.NewSpotlightState(),
+		WM: wm.WindowManagerState{
+			FocusedPane: wm.PaneTelemetry,
+			Zoomed:      false,
+		},
 	}
 
 	cfg, err := config.LoadConfig()
-	if err == nil && cfg.FirstRunCompleted {
+	if err == nil {
 		m.applyUserConfig(cfg)
-		m.Wizard.Active = false
-	} else {
-		m.Wizard.Active = true
-		m.Wizard.HasBackup = config.HasExistingSetup()
-		if m.Wizard.HasBackup {
-			m.Wizard.CurrentStep = views.StepRecovery
-		} else {
-			m.Wizard.CurrentStep = views.StepLanguage
-		}
-		m.Wizard.DraftConfig = config.DefaultConfig()
 	}
 
-	if cfg.WebServerPort > 0 {
-		m.WebServerPort = cfg.WebServerPort
+	if m.WebServerPort > 0 {
+		web.StartWebServer(m.WebServerPort)
 	}
-	web.StartWebServer(m.WebServerPort)
 
-	m.refreshAllData()
+	// Fetch initial data synchronously once
+	m.fetchSystemDataSync()
 	return m
 }
 
 func (m *Model) applyUserConfig(cfg config.UserConfig) {
 	switch cfg.Theme {
-	case "warm":
-		m.ThemeMode = styles.ThemeWarm
+	case "dos":
+		m.ThemeMode = styles.ThemeDOSNorton
+	case "gameboy":
+		m.ThemeMode = styles.ThemeGameBoy
 	case "dark":
 		m.ThemeMode = styles.ThemeDark
-	case "classic":
-		m.ThemeMode = styles.ThemeClassic
-	default:
+	case "warm":
+		m.ThemeMode = styles.ThemeWarm
+	case "mac":
 		m.ThemeMode = styles.ThemeMacLight
-	}
-
-	switch cfg.WMModel {
-	case "tiling":
-		m.WMMode = views.WMTiling
-	case "cardgrid":
-		m.WMMode = views.WMCardGrid
 	default:
-		m.WMMode = views.WMFloating
+		m.ThemeMode = styles.ThemeCyberArcade
 	}
-
-	switch cfg.WallpaperType {
-	case "custom":
-		m.WallpaperType = wallpaper.WallpaperCustom
-	case "preset":
-		m.WallpaperType = wallpaper.WallpaperPreset
-	default:
-		m.WallpaperType = wallpaper.WallpaperDynamicTime
-	}
-	m.WallpaperPreset = wallpaper.PresetScene(cfg.WallpaperPreset)
 
 	if cfg.Language == "en" {
 		m.Language = i18n.EN
@@ -151,25 +119,100 @@ func (m *Model) applyUserConfig(cfg config.UserConfig) {
 	}
 }
 
-func (m *Model) refreshAllData() {
-	m.Hardware = system.GetHardwareInfo()
-	m.Catalog = system.GetAppCatalog()
-	m.PackageCount = system.GetInstalledPackageCount()
+func (m *Model) saveCurrentConfig() {
+	themeStr := "cyber"
+	switch m.ThemeMode {
+	case styles.ThemeDOSNorton:
+		themeStr = "dos"
+	case styles.ThemeGameBoy:
+		themeStr = "gameboy"
+	case styles.ThemeDark:
+		themeStr = "dark"
+	case styles.ThemeWarm:
+		themeStr = "warm"
+	case styles.ThemeMacLight:
+		themeStr = "mac"
+	}
+
+	langStr := "id"
+	if m.Language == i18n.EN {
+		langStr = "en"
+	}
+
+	cfg := config.UserConfig{
+		ConfigVersion:     "v1.0.0-retro",
+		Theme:             themeStr,
+		WMModel:           "hybrid_tiling",
+		Language:          langStr,
+		FirstRunCompleted: true,
+		WebServerEnabled:  true,
+		WebServerPort:     m.WebServerPort,
+	}
+	_ = config.SaveConfig(cfg)
 }
 
-func tickCmd() tea.Cmd {
-	// 30 FPS = 1000ms / 30 ≈ 33.3ms
-	return tea.Tick(time.Millisecond*33, func(t time.Time) tea.Msg {
+func (m *Model) fetchSystemDataSync() {
+	m.Hardware = system.GetHardwareInfo()
+	m.Services = system.GetServices()
+	m.Processes = system.GetProcessList()
+	sec := system.GetSecurityState()
+	m.Ports = sec.OpenPorts
+	m.FirewallEnabled = sec.UfwActive
+	m.Catalog = system.GetAppCatalog()
+
+	// Sync services & processes into Spotlight searchable catalog
+	var svcNames, procNames []string
+	for _, s := range m.Services {
+		svcNames = append(svcNames, s.Name)
+	}
+	for i, p := range m.Processes {
+		if i < 15 {
+			procNames = append(procNames, fmt.Sprintf("%s (%d)", p.Name, p.PID))
+		}
+	}
+	m.Spotlight.SyncDynamicItems(svcNames, procNames)
+}
+
+// Background goroutine for async telemetry without freezing 24 FPS UI
+func pollTelemetryCmd() tea.Cmd {
+	return func() tea.Msg {
+		time.Sleep(2 * time.Second)
+		hw := system.GetHardwareInfo()
+		svcs := system.GetServices()
+		procs := system.GetProcessList()
+		sec := system.GetSecurityState()
+		return TelemetryMsg{
+			Hardware:  hw,
+			Services:  svcs,
+			Processes: procs,
+			Security:  sec,
+		}
+	}
+}
+
+// Adaptive 24 FPS engine ticker
+func (m Model) tickAdaptive() tea.Cmd {
+	// If user was active in last 2.5 seconds or modal is open: 24 FPS (~41.6ms)
+	// Otherwise: Throttle to 2 FPS (~500ms) to preserve CPU on ARM64/ODROID-C2 & save SSH bandwidth!
+	interval := time.Millisecond * 41 // 24 FPS
+	if !m.Spotlight.Active && !m.ShowHelp && !m.ShowConfirm && time.Since(m.LastActive) > 2500*time.Millisecond {
+		interval = time.Millisecond * 500 // 2 FPS idle mode
+	}
+
+	return tea.Tick(interval, func(t time.Time) tea.Msg {
 		return TickMsg(t)
 	})
 }
 
-// Init starts the Bubble Tea loop with smooth 30fps tick
+// Init starts the Bubble Tea loop with smooth 24 FPS tick and background telemetry
 func (m Model) Init() tea.Cmd {
-	return tickCmd()
+	return tea.Batch(
+		m.tickAdaptive(),
+		pollTelemetryCmd(),
+	)
 }
 
-// Update handles keyboard and window events
+// Update handles keyboard, mouse, and animation events
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -179,886 +222,457 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case TickMsg:
 		m.AnimFrame++
-		// Polling hardware setiap ~1.5 detik (45 frame @ 30fps) agar CPU hemat daya
-		if m.AnimFrame%45 == 0 {
-			m.Hardware = system.GetHardwareInfo()
-		}
-		return m, tickCmd()
+		return m, m.tickAdaptive()
 
-	case AppActionMsg:
-		m.AppDialog.IsRunning = false
-		m.AppDialog.Logs = msg.Logs
-		m.AppDialog.Success = msg.Success
-		m.refreshAllData()
-		return m, nil
+	case TelemetryMsg:
+		m.Hardware = msg.Hardware
+		m.Services = msg.Services
+		m.Processes = msg.Processes
+		m.Ports = msg.Security.OpenPorts
+		m.FirewallEnabled = msg.Security.UfwActive
+		return m, pollTelemetryCmd()
 
 	case tea.KeyMsg:
+		m.LastActive = time.Now() // Wake up adaptive engine to full 24 FPS
 		key := msg.String()
 
-		// 1. IMAGE PATH INPUT MODAL
-		if m.ShowImageInput {
+		// 1. SAFETY CONFIRMATION DIALOG MODAL
+		if m.ShowConfirm {
 			switch key {
-			case "enter":
-				m.ShowImageInput = false
-				path := strings.TrimSpace(m.ImageInputPath)
-				if path != "" {
-					_, err := wallpaper.ConvertImageToPixelArt(path, 60, 12)
-					if err != nil {
-						m.StatusMessage = "Gagal memproses gambar: " + err.Error()
-					} else {
-						m.WallpaperType = wallpaper.WallpaperCustom
-						m.StatusMessage = "Gambar berhasil dikonversi menjadi pixel art & aktif!"
-						m.saveCurrentConfig()
-					}
+			case "y", "Y", "enter":
+				m.ShowConfirm = false
+				if m.ConfirmAction != nil {
+					m.ConfirmAction()
 				}
 				return m, nil
-			case "esc":
-				m.ShowImageInput = false
-				return m, nil
-			case "backspace":
-				if len(m.ImageInputPath) > 0 {
-					m.ImageInputPath = m.ImageInputPath[:len(m.ImageInputPath)-1]
-				}
+			case "n", "N", "esc":
+				m.ShowConfirm = false
+				m.StatusMessage = "Tindakan dibatalkan."
 				return m, nil
 			default:
+				return m, nil
+			}
+		}
+
+		// 2. ARCADE HELP 'HOW TO PLAY' MODAL
+		if m.ShowHelp {
+			switch key {
+			case "?", "esc", "enter", "q":
+				m.ShowHelp = false
+				return m, nil
+			default:
+				return m, nil
+			}
+		}
+
+		// 3. UNIFIED SPOTLIGHT LAUNCHER HANDLING
+		if m.Spotlight.Active {
+			switch key {
+			case "esc":
+				m.Spotlight.Active = false
+				return m, nil
+
+			case "tab", "right":
+				// Accept Ghost-Text Autocomplete!
+				m.Spotlight.AcceptGhostText()
+				return m, nil
+
+			case "up":
+				if m.Spotlight.Cursor > 0 {
+					m.Spotlight.Cursor--
+				}
+				return m, nil
+
+			case "down":
+				if m.Spotlight.Cursor < len(m.Spotlight.Results)-1 {
+					m.Spotlight.Cursor++
+				}
+				return m, nil
+
+			case "enter":
+				m.Spotlight.Active = false
+				if len(m.Spotlight.Results) > 0 && m.Spotlight.Cursor < len(m.Spotlight.Results) {
+					item := m.Spotlight.Results[m.Spotlight.Cursor]
+					return m.executeLauncherItem(item)
+				}
+				return m, nil
+
+			case "backspace":
+				if len(m.Spotlight.Query) > 0 {
+					m.Spotlight.Query = m.Spotlight.Query[:len(m.Spotlight.Query)-1]
+					m.Spotlight.Filter()
+				}
+				return m, nil
+
+			default:
+				// Append printable single characters
 				if len(key) == 1 {
-					m.ImageInputPath += key
+					m.Spotlight.Query += key
+					m.Spotlight.Filter()
 				}
 				return m, nil
 			}
 		}
 
-		// 2. WIZARD / RECOVERY HANDLING
-		if m.Wizard.Active {
-			return m.handleWizardKeys(key)
-		}
-
-		// 3. APP INSTALL/UNINSTALL MODAL HANDLING
-		if m.AppDialog.Active {
-			return m.handleAppModalKeys(key)
-		}
-
-		// 4. SCREEN MODE NAVIGATION (iPadOS Top Tab Dashboard by Default)
-		if m.CurrentScreen == ScreenIPadDashboard {
-			switch key {
-			case "ctrl+c", "q":
-				return m, tea.Quit
-			case "1":
-				m.CurrentIPadTab = views.IPadTabDashboard
-				return m, nil
-			case "2":
-				m.CurrentIPadTab = views.IPadTabApps
-				return m, nil
-			case "3":
-				m.CurrentIPadTab = views.IPadTabImmich
-				return m, nil
-			case "4":
-				m.CurrentIPadTab = views.IPadTabNetwork
-				return m, nil
-			case "5":
-				m.CurrentIPadTab = views.IPadTabSecurity
-				return m, nil
-			case "6":
-				m.CurrentIPadTab = views.IPadTabSettings
-				return m, nil
-			case "left", "h":
-				if m.CurrentIPadTab > 0 {
-					m.CurrentIPadTab--
-				} else {
-					m.CurrentIPadTab = views.IPadTabSettings
-				}
-				return m, nil
-			case "right", "l":
-				if m.CurrentIPadTab < views.IPadTabSettings {
-					m.CurrentIPadTab++
-				} else {
-					m.CurrentIPadTab = views.IPadTabDashboard
-				}
-				return m, nil
-			case "tab":
-				if m.CurrentIPadTab == views.IPadTabApps {
-					filtered := m.getFilteredCatalog()
-					if len(filtered) > 0 {
-						m.CatalogCursor = (m.CatalogCursor + 1) % len(filtered)
-					}
-				} else {
-					if m.CurrentIPadTab < views.IPadTabSettings {
-						m.CurrentIPadTab++
-					} else {
-						m.CurrentIPadTab = views.IPadTabDashboard
-					}
-				}
-				return m, nil
-			case "w", "W", "up", "k":
-				if m.CurrentIPadTab == views.IPadTabApps {
-					if m.CatalogCursor > 0 {
-						m.CatalogCursor--
-					}
-				}
-				return m, nil
-			case "s", "S", "down", "j":
-				if m.CurrentIPadTab == views.IPadTabApps {
-					if m.CatalogCursor < len(m.Catalog)-1 {
-						m.CatalogCursor++
-					}
-				}
-				return m, nil
-			case "enter", "i", "I":
-				if m.CurrentIPadTab == views.IPadTabImmich {
-					// Pasang / Buka Immich Toolkit
-					var targetApp system.AppCatalogItem
-					found := false
-					for _, item := range m.Catalog {
-						if item.ID == "immich-sbc" {
-							targetApp = item
-							found = true
-							break
-						}
-					}
-					if !found {
-						targetApp = system.AppCatalogItem{
-							ID:          "immich-sbc",
-							Name:        "Immich SBC Optimizer (ODROID-C2)",
-							Category:    "Foto & Cloud",
-							PackageName: "immich-sbc-tool",
-							Installed:   system.IsPackageInstalled("immich-sbc-tool", "immich-sbc"),
-							Insight:     "Rekomendasi Utama! Dirancang khusus untuk ODROID-C2 (ARM64) 2GB RAM agar Immich berjalan lancar tanpa OOM.",
-						}
-					}
-					action := "install"
-					if targetApp.Installed {
-						action = "uninstall"
-					}
-					m.AppDialog = views.AppDialogState{
-						Active: true,
-						Action: action,
-						App:    targetApp,
-					}
-					return m, nil
-				}
-				if m.CurrentIPadTab == views.IPadTabApps {
-					filtered := m.getFilteredCatalog()
-					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
-						selected := filtered[m.CatalogCursor]
-						action := "install"
-						if selected.Installed {
-							action = "uninstall"
-						}
-						m.AppDialog = views.AppDialogState{
-							Active: true,
-							Action: action,
-							App:    selected,
-						}
-					}
-					return m, nil
-				}
-				return m, nil
-			case "x", "X":
-				if m.CurrentIPadTab == views.IPadTabImmich {
-					m.AppDialog = views.AppDialogState{
-						Active: true,
-						Action: "uninstall",
-						App: system.AppCatalogItem{
-							ID:          "immich-sbc",
-							Name:        "Immich SBC Optimizer (ODROID-C2)",
-							Category:    "Foto & Cloud",
-							PackageName: "immich-sbc-tool",
-							Installed:   true,
-						},
-					}
-					return m, nil
-				}
-				if m.CurrentIPadTab == views.IPadTabApps {
-					filtered := m.getFilteredCatalog()
-					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
-						selected := filtered[m.CatalogCursor]
-						if selected.Installed {
-							m.AppDialog = views.AppDialogState{
-								Active: true,
-								Action: "uninstall",
-								App:    selected,
-							}
-						}
-					}
-					return m, nil
-				}
-			case "t", "T":
-				m.ThemeMode = (m.ThemeMode + 1) % 4
-				return m, nil
-			}
-			return m, nil
-		}
-
-		// 5. SCREEN MODE NAVIGATION (Alexis Icons vs Commerce Dashboard)
-		if m.CurrentScreen == ScreenAlexisGrid {
-			switch key {
-			case "ctrl+c", "q":
-				return m, tea.Quit
-			case "up", "k":
-				if m.AlexisCursor >= 4 {
-					m.AlexisCursor -= 4
-				}
-				return m, nil
-			case "down", "j":
-				if m.AlexisCursor < 4 {
-					m.AlexisCursor += 4
-				}
-				return m, nil
-			case "left", "h":
-				if m.AlexisCursor%4 > 0 {
-					m.AlexisCursor--
-				}
-				return m, nil
-			case "right", "l":
-				if m.AlexisCursor%4 < 3 {
-					m.AlexisCursor++
-				}
-				return m, nil
-			case "enter", " ":
-				// Enter opens Commerce Dashboard with relevant section
-				m.CurrentScreen = ScreenCommerceDashboard
-				switch m.AlexisCursor {
-				case 0: // Dasbor Utama
-					m.CommerceSidebarCursor = 0
-				case 1: // Toko Aplikasi
-					m.CommerceSidebarCursor = 1
-				case 2: // Immich SBC
-					m.CommerceSidebarCursor = 2
-				case 3: // Penyimpanan
-					m.CommerceSidebarCursor = 3
-				case 4: // Jaringan
-					m.CommerceSidebarCursor = 4
-				case 5: // Keamanan
-					m.CommerceSidebarCursor = 5
-				case 6: // Pengaturan
-					m.CommerceSidebarCursor = 7
-				case 7: // Panduan
-					m.CommerceSidebarCursor = 0
-				}
-				return m, nil
-			case "t", "T":
-				m.ThemeMode = (m.ThemeMode + 1) % 3
-				return m, nil
-			}
-			return m, nil
-		}
-
-		// When on ScreenCommerceDashboard:
-		if m.CurrentScreen == ScreenCommerceDashboard {
-			switch key {
-			case "esc", "backspace":
-				m.CurrentScreen = ScreenAlexisGrid
-				return m, nil
-			case "ctrl+c", "q":
-				return m, tea.Quit
-			case "up", "k":
-				if m.CommerceSidebarCursor > 0 {
-					m.CommerceSidebarCursor--
-				}
-				return m, nil
-			case "down", "j":
-				if m.CommerceSidebarCursor < 7 {
-					m.CommerceSidebarCursor++
-				}
-				return m, nil
-			case "w", "W":
-				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi navigate up apps
-					if m.CatalogCursor > 0 {
-						m.CatalogCursor--
-					}
-				}
-				return m, nil
-			case "s", "S":
-				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi navigate down apps
-					if m.CatalogCursor < len(m.Catalog)-1 {
-						m.CatalogCursor++
-					}
-				}
-				return m, nil
-			case "left", "h":
-				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi
-					if m.ActiveCategory > 0 {
-						m.ActiveCategory--
-					} else {
-						m.ActiveCategory = len(views.CategoryFilterList) - 1
-					}
-					m.CatalogCursor = 0
-				}
-				return m, nil
-			case "right", "l":
-				if m.CommerceSidebarCursor == 1 { // Toko Aplikasi
-					m.ActiveCategory = (m.ActiveCategory + 1) % len(views.CategoryFilterList)
-					m.CatalogCursor = 0
-				}
-				return m, nil
-			case "tab":
-				if m.CommerceSidebarCursor == 1 {
-					m.CatalogCursor = (m.CatalogCursor + 1) % len(m.getFilteredCatalog())
-				}
-				return m, nil
-			case "enter", "i", "I":
-				if m.CommerceSidebarCursor == 2 {
-					// Pasang / Buka Immich Toolkit
-					var targetApp system.AppCatalogItem
-					found := false
-					for _, item := range m.Catalog {
-						if item.ID == "immich-sbc" {
-							targetApp = item
-							found = true
-							break
-						}
-					}
-					if !found {
-						targetApp = system.AppCatalogItem{
-							ID:          "immich-sbc",
-							Name:        "Immich SBC Optimizer (ODROID-C2)",
-							Category:    "Foto & Cloud",
-							PackageName: "immich-sbc-tool",
-							Installed:   system.IsPackageInstalled("immich-sbc-tool", "immich-sbc"),
-							Insight:     "Rekomendasi Utama! Dirancang khusus untuk ODROID-C2 (ARM64) 2GB RAM agar Immich berjalan lancar tanpa OOM.",
-						}
-					}
-					action := "install"
-					if targetApp.Installed {
-						action = "uninstall"
-					}
-					m.AppDialog = views.AppDialogState{
-						Active: true,
-						Action: action,
-						App:    targetApp,
-					}
-					return m, nil
-				}
-				if m.CommerceSidebarCursor == 1 {
-					filtered := m.getFilteredCatalog()
-					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
-						selected := filtered[m.CatalogCursor]
-						action := "install"
-						if selected.Installed {
-							action = "uninstall"
-						}
-						m.AppDialog = views.AppDialogState{
-							Active: true,
-							Action: action,
-							App:    selected,
-						}
-					}
-					return m, nil
-				}
-				// Untuk menu sidebar lainnya (Dasbor, Layanan, Jaringan, Keamanan, Log, Pengaturan),
-				// Enter hanya memfokuskan / membuka halaman detail tersebut di panel tengah tanpa memunculkan modal pasang.
-				return m, nil
-			case "x", "X":
-				if m.CommerceSidebarCursor == 1 {
-					filtered := m.getFilteredCatalog()
-					if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
-						selected := filtered[m.CatalogCursor]
-						if selected.Installed {
-							m.AppDialog = views.AppDialogState{
-								Active: true,
-								Action: "uninstall",
-								App:    selected,
-							}
-						}
-					}
-					return m, nil
-				}
-			}
-			return m, nil
-		}
-
-		// 5. GLOBAL DESKTOP SHORTCUTS (Fallback / Direct)
+		// 4. MAIN WINDOW MANAGER CONTROLS & NAVIGATION
 		switch key {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
-		// Quick Theme Toggle (T)
-		case "t", "T":
-			m.ThemeMode = (m.ThemeMode + 1) % 3
-			themeName := "Terang"
-			if m.ThemeMode == styles.ThemeWarm {
-				themeName = "Hangat"
-			} else if m.ThemeMode == styles.ThemeDark {
-				themeName = "Gelap"
-			}
-			m.StatusMessage = "Tema diubah ke: " + themeName
-			m.saveCurrentConfig()
+		case " ":
+			// Open Spotlight Launcher
+			m.Spotlight.Active = true
+			m.Spotlight.Query = ""
+			m.Spotlight.Filter()
 			return m, nil
 
-		// Quick Window Manager Mode Toggle (M)
-		case "m", "M":
-			m.WMMode = (m.WMMode + 1) % 3
-			wmName := "Floating Window"
-			if m.WMMode == views.WMTiling {
-				wmName = "Tiling 2-Kolom"
-			} else if m.WMMode == views.WMCardGrid {
-				wmName = "Card Grid"
-			}
-			m.StatusMessage = "Model Window Manager diubah ke: " + wmName
-			m.saveCurrentConfig()
+		case "/":
+			// Open Spotlight Launcher with query prefix
+			m.Spotlight.Active = true
+			m.Spotlight.Query = ""
+			m.Spotlight.Filter()
 			return m, nil
 
-		// Open Image to Pixel Generator (G)
-		case "g", "G":
-			m.ShowImageInput = true
-			return m, nil
-
-		// Open Setup Wizard anytime (W)
-		case "w", "W":
-			m.Wizard.Active = true
-			m.Wizard.CurrentStep = views.StepLanguage
-			m.Wizard.SelectedRow = 0
-			m.Wizard.DraftConfig = config.DefaultConfig()
-			return m, nil
-
-		// Direct Tab Switching via numbers 1 - 3
-		case "1":
-			m.ActiveWorkspace = components.WorkspaceDashboard
-			return m, nil
-		case "2":
-			m.ActiveWorkspace = components.WorkspaceSettings
-			return m, nil
-		case "3":
-			m.ActiveWorkspace = components.WorkspaceGuide
-			return m, nil
-
-		// Dynamic Arrow Tab Switching (Left / Right)
-		case "left", "h":
-			if m.ActiveWorkspace > 0 {
-				m.ActiveWorkspace--
-			} else {
-				m.ActiveWorkspace = components.WorkspaceGuide
-			}
-			return m, nil
-
-		case "right", "l":
-			m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
+		case "?":
+			// Open Arcade How to Play / Help Modal
+			m.ShowHelp = true
 			return m, nil
 
 		case "tab":
-			if m.ActiveWorkspace == components.WorkspaceDashboard {
-				m.ActiveCategory = (m.ActiveCategory + 1) % len(views.CategoryFilterList)
-				m.CatalogCursor = 0
-			} else {
-				m.ActiveWorkspace = (m.ActiveWorkspace + 1) % 3
-				return m, nil
-			}
+			m.WM.NextPane()
 			return m, nil
 
 		case "shift+tab":
-			if m.ActiveWorkspace == components.WorkspaceDashboard {
-				if m.ActiveCategory > 0 {
-					m.ActiveCategory--
-				} else {
-					m.ActiveCategory = len(views.CategoryFilterList) - 1
-				}
-				m.CatalogCursor = 0
-			} else {
-				if m.ActiveWorkspace > 0 {
-					m.ActiveWorkspace--
-				} else {
-					m.ActiveWorkspace = components.WorkspaceGuide
-				}
-				return m, nil
-			}
+			m.WM.PrevPane()
 			return m, nil
 
-		// Navigation inside active workspace
+		case "f", "F":
+			// Toggle Fullscreen / Zoom of focused pane
+			m.WM.ToggleZoom()
+			return m, nil
+
+		case "1":
+			m.WM.FocusedPane = wm.PaneTelemetry
+			return m, nil
+
+		case "2":
+			m.WM.FocusedPane = wm.PaneServices
+			return m, nil
+
+		case "3":
+			m.WM.FocusedPane = wm.PaneProcesses
+			return m, nil
+
+		case "4":
+			m.WM.FocusedPane = wm.PaneNetwork
+			return m, nil
+
+		case "t", "T":
+			// Quick Cycle Theme
+			m.ThemeMode = styles.NextTheme(m.ThemeMode)
+			m.StatusMessage = fmt.Sprintf("Tema aktif: %s", styles.ThemeName(m.ThemeMode))
+			m.saveCurrentConfig()
+			return m, nil
+
+		case "l", "L":
+			// Quick Language Toggle
+			if m.Language == i18n.ID {
+				m.Language = i18n.EN
+				m.StatusMessage = "Language set to English."
+			} else {
+				m.Language = i18n.ID
+				m.StatusMessage = "Bahasa diubah ke Bahasa Indonesia."
+			}
+			m.saveCurrentConfig()
+			return m, nil
+
+		case "esc":
+			if m.WM.Zoomed {
+				m.WM.Zoomed = false
+			}
+			m.StatusMessage = ""
+			return m, nil
+
+		// PANE-SPECIFIC SCROLLING & SHORTCUTS
 		case "up", "k":
-			m.moveCursor(-1)
+			switch m.WM.FocusedPane {
+			case wm.PaneServices:
+				if m.WM.ServiceCursor > 0 {
+					m.WM.ServiceCursor--
+				}
+			case wm.PaneProcesses:
+				if m.WM.ProcessCursor > 0 {
+					m.WM.ProcessCursor--
+				}
+			case wm.PaneNetwork:
+				if m.WM.NetworkCursor > 0 {
+					m.WM.NetworkCursor--
+				}
+			default:
+				m.WM.PrevPane()
+			}
 			return m, nil
 
 		case "down", "j":
-			m.moveCursor(1)
-			return m, nil
-
-		// Action Keys: ENTER or I anywhere in Launcher to Install!
-		case "enter", "i", "I":
-			if m.ActiveWorkspace == components.WorkspaceDashboard {
-				filtered := m.getFilteredCatalog()
-				if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
-					selected := filtered[m.CatalogCursor]
-					action := "install"
-					if selected.Installed {
-						action = "uninstall"
-					}
-					m.AppDialog = views.AppDialogState{
-						Active: true,
-						Action: action,
-						App:    selected,
-					}
+			switch m.WM.FocusedPane {
+			case wm.PaneServices:
+				if m.WM.ServiceCursor < len(m.Services)-1 {
+					m.WM.ServiceCursor++
 				}
-			} else if m.ActiveWorkspace == components.WorkspaceSettings {
-				m.applySettingSelection()
+			case wm.PaneProcesses:
+				if m.WM.ProcessCursor < len(m.Processes)-1 {
+					m.WM.ProcessCursor++
+				}
+			case wm.PaneNetwork:
+				if m.WM.NetworkCursor < len(m.Ports)-1 {
+					m.WM.NetworkCursor++
+				}
+			default:
+				m.WM.NextPane()
 			}
 			return m, nil
 
+		case "left", "h":
+			m.WM.PrevPane()
+			return m, nil
+
+		case "right":
+			m.WM.NextPane()
+			return m, nil
+
+		case "s", "S":
+			// Start Service
+			if m.WM.FocusedPane == wm.PaneServices && len(m.Services) > 0 {
+				svc := m.Services[m.WM.ServiceCursor]
+				out, err := system.ControlService("start", svc.Name)
+				if err != nil {
+					m.StatusMessage = fmt.Sprintf("Gagal Start %s: %v", svc.Name, err)
+				} else {
+					m.StatusMessage = fmt.Sprintf("Berhasil Start %s: %s", svc.Name, out)
+				}
+				m.fetchSystemDataSync()
+			}
+			return m, nil
+
+		case "r", "R":
+			// Restart Service
+			if m.WM.FocusedPane == wm.PaneServices && len(m.Services) > 0 {
+				svc := m.Services[m.WM.ServiceCursor]
+				out, err := system.ControlService("restart", svc.Name)
+				if err != nil {
+					m.StatusMessage = fmt.Sprintf("Gagal Restart %s: %v", svc.Name, err)
+				} else {
+					m.StatusMessage = fmt.Sprintf("Berhasil Restart %s: %s", svc.Name, out)
+				}
+				m.fetchSystemDataSync()
+			}
+			return m, nil
+
+		// Stop Service with Safety Guard
 		case "x", "X":
-			if m.ActiveWorkspace == components.WorkspaceDashboard {
-				filtered := m.getFilteredCatalog()
-				if len(filtered) > 0 && m.CatalogCursor < len(filtered) {
-					selected := filtered[m.CatalogCursor]
-					if selected.Installed {
-						m.AppDialog = views.AppDialogState{
-							Active: true,
-							Action: "uninstall",
-							App:    selected,
-						}
+			if m.WM.FocusedPane == wm.PaneServices && len(m.Services) > 0 {
+				svc := m.Services[m.WM.ServiceCursor]
+				if strings.Contains(svc.Name, "ssh") || strings.Contains(svc.Name, "systemd") {
+					m.promptConfirm(fmt.Sprintf("⚠️ BAHAYA: Menghentikan %s dapat memutus koneksi remote! Yakin Stop? (y/n)", svc.Name), func() {
+						_, _ = system.ControlService("stop", svc.Name)
+						m.StatusMessage = fmt.Sprintf("Layanan %s dihentikan.", svc.Name)
+						m.fetchSystemDataSync()
+					})
+				} else {
+					_, _ = system.ControlService("stop", svc.Name)
+					m.StatusMessage = fmt.Sprintf("Layanan %s dihentikan.", svc.Name)
+					m.fetchSystemDataSync()
+				}
+			}
+			return m, nil
+
+		case "K":
+			// Kill process with Safety Guard
+			if m.WM.FocusedPane == wm.PaneProcesses && len(m.Processes) > 0 {
+				proc := m.Processes[m.WM.ProcessCursor]
+				m.promptConfirm(fmt.Sprintf("⚠️ Yakin ingin mematikan proses [%s] (PID %d)? (y/n)", proc.Name, proc.PID), func() {
+					err := system.KillProcess(proc.PID, true)
+					if err != nil {
+						m.StatusMessage = fmt.Sprintf("Gagal mematikan PID %d: %v", proc.PID, err)
 					} else {
-						m.StatusMessage = "Aplikasi ini belum terpasang."
+						m.StatusMessage = fmt.Sprintf("Proses %s (PID %d) berhasil dimatikan.", proc.Name, proc.PID)
 					}
-				}
+					m.fetchSystemDataSync()
+				})
 			}
 			return m, nil
 
-		case " ":
-			if m.ActiveWorkspace == components.WorkspaceSettings {
-				m.applySettingSelection()
-			}
-			return m, nil
-		}
-	}
-
-	return m, nil
-}
-
-func (m *Model) handleWizardKeys(key string) (tea.Model, tea.Cmd) {
-	switch key {
-	case "ctrl+c":
-		return m, tea.Quit
-	case "up", "k":
-		if m.Wizard.SelectedRow > 0 {
-			m.Wizard.SelectedRow--
-		}
-	case "down", "j":
-		m.Wizard.SelectedRow++
-	case "enter", " ":
-		switch m.Wizard.CurrentStep {
-		case views.StepRecovery:
-			if m.Wizard.SelectedRow == 0 {
-				cfg, err := config.LoadBackupConfig()
-				if err == nil {
-					m.applyUserConfig(cfg)
-					m.StatusMessage = "Pengaturan lama berhasil dipulihkan (Recovery)!"
-				}
-				m.Wizard.Active = false
-				return m, nil
-			}
-			m.Wizard.CurrentStep = views.StepLanguage
-			m.Wizard.SelectedRow = 0
-
-		case views.StepLanguage:
-			if m.Wizard.SelectedRow == 1 {
-				m.Language = i18n.EN
-				m.Wizard.DraftConfig.Language = "en"
+		case "u", "U":
+			// Toggle UFW Firewall
+			newStatus := !m.FirewallEnabled
+			out, err := system.ToggleUFW(newStatus)
+			if err != nil {
+				m.StatusMessage = fmt.Sprintf("Gagal toggle firewall: %v", err)
 			} else {
-				m.Language = i18n.ID
-				m.Wizard.DraftConfig.Language = "id"
+				m.FirewallEnabled = newStatus
+				m.StatusMessage = fmt.Sprintf("Status Firewall: %s", out)
 			}
-			m.Wizard.CurrentStep = views.StepTheme
-			m.Wizard.SelectedRow = 0
-
-		case views.StepTheme:
-			switch m.Wizard.SelectedRow {
-			case 1:
-				m.ThemeMode = styles.ThemeWarm
-				m.Wizard.DraftConfig.Theme = "warm"
-			case 2:
-				m.ThemeMode = styles.ThemeDark
-				m.Wizard.DraftConfig.Theme = "dark"
-			default:
-				m.ThemeMode = styles.ThemeMacLight
-				m.Wizard.DraftConfig.Theme = "mac"
-			}
-			m.Wizard.CurrentStep = views.StepWM
-			m.Wizard.SelectedRow = 0
-
-		case views.StepWM:
-			switch m.Wizard.SelectedRow {
-			case 1:
-				m.WMMode = views.WMTiling
-				m.Wizard.DraftConfig.WMModel = "tiling"
-			case 2:
-				m.WMMode = views.WMCardGrid
-				m.Wizard.DraftConfig.WMModel = "cardgrid"
-			default:
-				m.WMMode = views.WMFloating
-				m.Wizard.DraftConfig.WMModel = "floating"
-			}
-			m.Wizard.CurrentStep = views.StepSSH
-			m.Wizard.SelectedRow = 0
-
-		case views.StepSSH:
-			m.Wizard.DraftConfig.AutoStartSSH = (m.Wizard.SelectedRow == 0)
-			m.Wizard.DraftConfig.FirstRunCompleted = true
-			config.SaveConfig(m.Wizard.DraftConfig)
-			m.Wizard.CurrentStep = views.StepComplete
-
-		case views.StepComplete:
-			m.Wizard.Active = false
-			m.StatusMessage = "Selamat datang di Bumiayu TUI!"
-		}
-	}
-	return m, nil
-}
-
-func (m *Model) handleAppModalKeys(key string) (tea.Model, tea.Cmd) {
-	if m.AppDialog.IsRunning {
-		return m, nil
-	}
-
-	if m.AppDialog.Logs != "" {
-		if key == "enter" || key == "esc" || key == "q" || key == " " {
-			m.AppDialog.Active = false
-			m.AppDialog.Logs = ""
 			return m, nil
 		}
 	}
 
-	if key == "y" || key == "Y" {
-		m.AppDialog.IsRunning = true
-		m.AppDialog.Logs = "Sedang memproses " + m.AppDialog.Action + " " + m.AppDialog.App.Name + "..."
-		action := m.AppDialog.Action
-		item := m.AppDialog.App
-		return m, func() tea.Msg {
-			out, err := system.ExecutePackageAction(action, item)
-			success := err == nil
-			return AppActionMsg{Logs: out, Success: success}
-		}
-	}
-
-	if key == "n" || key == "N" || key == "esc" {
-		m.AppDialog.Active = false
-		return m, nil
-	}
 	return m, nil
 }
 
-// getFilteredCatalog returns applications matching active category
-func (m *Model) getFilteredCatalog() []system.AppCatalogItem {
-	if m.ActiveCategory == 0 {
-		return m.Catalog
-	}
-	selectedCatName := views.CategoryFilterList[m.ActiveCategory]
-	var list []system.AppCatalogItem
-	for _, app := range m.Catalog {
-		if app.Category == selectedCatName {
-			list = append(list, app)
+func (m *Model) promptConfirm(prompt string, action func()) {
+	m.ShowConfirm = true
+	m.ConfirmPrompt = prompt
+	m.ConfirmAction = action
+}
+
+func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.Cmd) {
+	cmd := item.Command
+
+	switch {
+	case cmd == "clean_ram":
+		out, _ := system.CleanRAMCache()
+		m.StatusMessage = "⚡ " + out
+		m.fetchSystemDataSync()
+
+	case cmd == "audit_ports":
+		m.WM.FocusedPane = wm.PaneNetwork
+		m.StatusMessage = "🔍 Fokus ke audit Port & Jaringan."
+
+	case cmd == "toggle_ufw":
+		newStatus := !m.FirewallEnabled
+		_, _ = system.ToggleUFW(newStatus)
+		m.FirewallEnabled = newStatus
+		m.StatusMessage = fmt.Sprintf("🛡️ Status Firewall UFW: %t", newStatus)
+
+	case cmd == "kill_highest_oom":
+		// Find highest OOM process
+		var highestProc *system.ProcessItem
+		for i := range m.Processes {
+			if highestProc == nil || m.Processes[i].OOMScore > highestProc.OOMScore {
+				highestProc = &m.Processes[i]
+			}
+		}
+		if highestProc != nil {
+			proc := *highestProc
+			m.promptConfirm(fmt.Sprintf("⚠️ Bunuh proses OOM tertinggi [%s] (PID %d, Skor %d)? (y/n)", proc.Name, proc.PID, proc.OOMScore), func() {
+				_ = system.KillProcess(proc.PID, true)
+				m.StatusMessage = fmt.Sprintf("Proses %s (PID %d) berhasil dimatikan.", proc.Name, proc.PID)
+				m.fetchSystemDataSync()
+			})
+		}
+
+	case cmd == "next_theme":
+		m.ThemeMode = styles.NextTheme(m.ThemeMode)
+		m.StatusMessage = fmt.Sprintf("Tema aktif: %s", styles.ThemeName(m.ThemeMode))
+		m.saveCurrentConfig()
+
+	case strings.HasPrefix(cmd, "jump_"):
+		var idx int
+		fmt.Sscanf(cmd, "jump_%d", &idx)
+		m.WM.FocusedPane = wm.PaneID(idx)
+		m.StatusMessage = fmt.Sprintf("Lompat ke Panel %d", idx+1)
+
+	case strings.HasPrefix(cmd, "service:"):
+		svcName := strings.TrimPrefix(cmd, "service:")
+		m.WM.FocusedPane = wm.PaneServices
+		for i, s := range m.Services {
+			if s.Name == svcName {
+				m.WM.ServiceCursor = i
+				break
+			}
+		}
+		m.StatusMessage = fmt.Sprintf("Layanan %s dipilih. Tekan [S] Start, [T] Stop, [R] Restart.", svcName)
+
+	case strings.HasPrefix(cmd, "kill_process:"):
+		procStr := strings.TrimPrefix(cmd, "kill_process:")
+		var name string
+		var pid int
+		fmt.Sscanf(procStr, "%s (%d)", &name, &pid)
+		if pid > 0 {
+			m.promptConfirm(fmt.Sprintf("⚠️ Matikan proses %s (PID %d)? (y/n)", name, pid), func() {
+				_ = system.KillProcess(pid, true)
+				m.StatusMessage = fmt.Sprintf("Proses %s berhasil dimatikan.", name)
+				m.fetchSystemDataSync()
+			})
 		}
 	}
-	return list
+
+	return *m, nil
 }
 
-func (m *Model) moveCursor(delta int) {
-	switch m.ActiveWorkspace {
-	case components.WorkspaceDashboard:
-		filtered := m.getFilteredCatalog()
-		if len(filtered) > 0 {
-			m.CatalogCursor = clamp(m.CatalogCursor+delta, 0, len(filtered)-1)
-		} else {
-			m.CatalogCursor = 0
-		}
-	case components.WorkspaceSettings:
-		m.SettingsCursor = clamp(m.SettingsCursor+delta, 0, 11) // 0-2 themes, 3-5 WM, 6-11 Wallpaper
-	}
-}
-
-func (m *Model) applySettingSelection() {
-	if m.SettingsCursor < 3 {
-		m.ThemeMode = styles.ThemeMode(m.SettingsCursor)
-		m.StatusMessage = "Tema berhasil diterapkan!"
-	} else if m.SettingsCursor < 6 {
-		m.WMMode = views.WMMode(m.SettingsCursor - 3)
-		m.StatusMessage = "Model Window Manager berhasil diubah!"
-	} else {
-		wpIdx := m.SettingsCursor - 6
-		switch wpIdx {
-		case 0, 1, 2, 3:
-			m.WallpaperType = wallpaper.WallpaperPreset
-			m.WallpaperPreset = wallpaper.PresetScene(wpIdx)
-			m.StatusMessage = "Wallpaper Seni Bumiayu diterapkan!"
-		case 4:
-			m.WallpaperType = wallpaper.WallpaperDynamicTime
-			m.StatusMessage = "Wallpaper Dinamis (Waktu Server) diterapkan!"
-		case 5:
-			m.ShowImageInput = true
-		}
-	}
-	m.saveCurrentConfig()
-}
-
-func (m *Model) saveCurrentConfig() {
-	cfg := config.UserConfig{
-		ConfigVersion:     "v0.9.0-beta.13",
-		FirstRunCompleted: true,
-		AutoStartSSH:      false,
-	}
-	switch m.ThemeMode {
-	case styles.ThemeWarm:
-		cfg.Theme = "warm"
-	case styles.ThemeDark:
-		cfg.Theme = "dark"
-	default:
-		cfg.Theme = "light"
-	}
-	switch m.WMMode {
-	case views.WMTiling:
-		cfg.WMModel = "tiling"
-	case views.WMCardGrid:
-		cfg.WMModel = "cardgrid"
-	default:
-		cfg.WMModel = "floating"
-	}
-	switch m.WallpaperType {
-	case wallpaper.WallpaperCustom:
-		cfg.WallpaperType = "custom"
-	case wallpaper.WallpaperPreset:
-		cfg.WallpaperType = "preset"
-	default:
-		cfg.WallpaperType = "dynamic"
-	}
-	cfg.WallpaperPreset = int(m.WallpaperPreset)
-	if m.Language == i18n.EN {
-		cfg.Language = "en"
-	} else {
-		cfg.Language = "id"
-	}
-	config.SaveConfig(cfg)
-}
-
-func clamp(v, min, max int) int {
-	if max < min {
-		return min
-	}
-	if v < min {
-		return min
-	}
-	if v > max {
-		return max
-	}
-	return v
-}
-
-// View renders the complete Desktop Environment or Wizard modal
+// View renders the terminal window manager interface
 func (m Model) View() string {
 	width := m.width
-	if width < 80 {
-		width = 80
-	}
 	height := m.height
-	if height < 24 {
-		height = 24
+	if width < 50 {
+		width = 50
+	}
+	if height < 18 {
+		height = 18
 	}
 
 	st := styles.GetTheme(m.ThemeMode)
 
-	// Image input prompt modal
-	if m.ShowImageInput {
-		modalWidth := width - 12
-		if modalWidth > 68 {
-			modalWidth = 68
-		}
-		content := lipgloss.JoinVertical(lipgloss.Left,
-			st.Badge.Render("🖼️ GENERATOR FOTO KE PIXEL ART BUMIAYU"),
-			"",
-			"Masukkan path file gambar (PNG / JPG) di server Anda:",
-			st.Card.Render(m.ImageInputPath+"_"),
-			"",
-			st.Subtitle.Render("Contoh: /tmp/wallpaper.jpg atau gambar.png"),
-			"",
-			lipgloss.JoinHorizontal(lipgloss.Center,
-				st.ButtonActive.Render("[Enter] Generate Pixel Art"),
-				"    ",
-				st.ButtonNormal.Render("[Esc] Batal"),
-			),
-		)
-		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, st.Modal.Width(modalWidth).Render(content))
+	// 1. CONFIRMATION SAFETY GUARD MODAL OVERLAY
+	if m.ShowConfirm {
+		promptRender := lipgloss.NewStyle().Bold(true).Foreground(st.DangerColor).Render(m.ConfirmPrompt)
+		hint := lipgloss.NewStyle().Foreground(st.TextColor).Render("Tekan [Y / Enter] untuk Lanjut | [N / Esc] untuk Batal")
+		box := st.Modal.Width(60).Render(lipgloss.JoinVertical(lipgloss.Center, promptRender, "", hint))
+		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
 	}
 
-	// If Wizard is active, render centered Setup Wizard
-	if m.Wizard.Active {
-		return views.RenderWizard(m.Wizard, st, width, height)
+	// 2. ARCADE HELP 'HOW TO PLAY' MODAL OVERLAY ('?' key)
+	if m.ShowHelp {
+		modal := help.RenderArcadeHelpModal(st, width, height)
+		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, modal)
 	}
 
-	// WEB UI SCREEN MODE RENDERING
-	if m.CurrentScreen == ScreenIPadDashboard {
-		content := views.RenderIPadDashboard(
-			m.Hardware,
-			m.Catalog,
-			m.CurrentIPadTab,
-			m.CatalogCursor,
-			m.ActiveCategory,
-			m.AnimFrame,
-			m.AppDialog,
-			m.WebServerPort,
-			st,
-			width,
-			height,
-		)
-		lines := strings.Split(content, "\n")
-		if len(lines) > height {
-			lines = lines[:height]
-		}
-		return strings.Join(lines, "\n")
+	// 3. UNIFIED SPOTLIGHT LAUNCHER MODAL OVERLAY ('Space' or '/' key)
+	if m.Spotlight.Active {
+		spotlightModal := launcher.RenderSpotlight(m.Spotlight, st, width, height)
+		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, spotlightModal)
 	}
 
-	if m.CurrentScreen == ScreenAlexisGrid {
-		content := views.RenderAlexisGrid(m.AlexisCursor, m.AnimFrame, st, width, height)
-		lines := strings.Split(content, "\n")
-		if len(lines) > height {
-			lines = lines[:height]
-		}
-		return strings.Join(lines, "\n")
+	// 4. MAIN WINDOW MANAGER INTERFACE
+	// 4a. Topbar: 8-Bit Animated Mascot + Telemetry pills + Live Clock
+	topBar := components.RenderTopBar(m.Hardware, m.AnimFrame, st, m.Language, width)
+
+	// 4b. Running 24 FPS Status Marquee Ticker
+	tickerMsgs := []string{
+		"⚡ BUMIAYU TUI WINDOW MANAGER",
+		fmt.Sprintf("HOST: %s (%s)", m.Hardware.Hostname, m.Hardware.Arch),
+		fmt.Sprintf("TEMA: %s", st.Name),
+		"TEKAN [SPACE] UNTUK LAUNCHER",
+		"TEKAN [?] UNTUK BANTUAN ARCADE CONTROLS",
+		fmt.Sprintf("CPU LOAD: %.2f | RAM: %d MB", m.Hardware.Load1, m.Hardware.MemUsedMB),
 	}
+	tickerLine := retro.RenderMarqueeTicker(tickerMsgs, m.AnimFrame, width, st)
 
-	if m.CurrentScreen == ScreenCommerceDashboard {
-		content := views.RenderCommerceDashboard(
-			m.Hardware,
-			m.Catalog,
-			m.CommerceSidebarCursor,
-			m.CatalogCursor,
-			m.ActiveCategory,
-			m.AnimFrame,
-			m.AppDialog,
-			st,
-			width,
-			height,
-		)
-		lines := strings.Split(content, "\n")
-		if len(lines) > height {
-			lines = lines[:height]
-		}
-		return strings.Join(lines, "\n")
-	}
+	// 4c. Main Workspace: Tiled Layout or Zoomed Pane
+	tiledLayout := wm.RenderTiledLayout(
+		m.WM,
+		m.Hardware,
+		m.Services,
+		m.Processes,
+		m.Ports,
+		m.FirewallEnabled,
+		m.AnimFrame,
+		st,
+		width,
+		height,
+	)
 
-	// 1. Top Desktop Bar
-	topBar := components.RenderTopBar(m.Hardware, st, m.Language, width)
-
-	// 2. Workspace Navigation Tabs
-	workspaceTabs := components.RenderWorkspaceTabs(m.ActiveWorkspace, st, width)
-
-	// 3. Main Workspace View
-	var currentView string
-	switch m.ActiveWorkspace {
-	case components.WorkspaceDashboard:
-		currentView = views.RenderDashboard(m.Hardware, m.Catalog, m.CatalogCursor, m.ActiveCategory, m.AnimFrame, m.AppDialog, m.WMMode, m.WallpaperType, m.WallpaperPreset, st, m.Language, width, height)
-	case components.WorkspaceSettings:
-		currentView = views.RenderSettings(m.ThemeMode, m.WMMode, m.WallpaperType, m.WallpaperPreset, m.SettingsCursor, m.ImageInputPath, st, width, height)
-	case components.WorkspaceGuide:
-		currentView = views.RenderGuide(st, width, height)
-	}
-
-	// 4. Status Bar
-	statusBar := components.RenderStatusBar(st, width, m.StatusMessage)
+	// 4d. Persistent Bottom Quickbar with Shortcuts Help
+	quickBar := help.RenderQuickBar(st, width, m.StatusMessage, m.WM.Zoomed)
 
 	fullContent := lipgloss.JoinVertical(lipgloss.Left,
 		topBar,
-		workspaceTabs,
-		currentView,
-		statusBar,
+		tickerLine,
+		tiledLayout,
+		quickBar,
 	)
 
-	// Clamp to terminal height so no scrolling occurs inside alternate screen
+	// Clamp to terminal height so no scrolling occurs inside alternate screen buffer
 	lines := strings.Split(fullContent, "\n")
 	if len(lines) > height {
 		lines = lines[:height]

@@ -6,17 +6,15 @@ import (
 
 	"github.com/bumiayu/bumiayu-de/internal/i18n"
 	"github.com/bumiayu/bumiayu-de/internal/system"
+	"github.com/bumiayu/bumiayu-de/internal/ui/retro"
 	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// RenderTopBar renders the desktop status bar using active theme styles
-func RenderTopBar(info system.HardwareInfo, st styles.ThemeStyles, lang i18n.Language, width int) string {
-	t := i18n.Get(lang)
-
-	// Left: App Name & Host
-	hostBadge := st.Badge.Render("🏝️ " + t.AppTitle)
-	hostInfo := lipgloss.NewStyle().Foreground(st.TextColor).Bold(true).Render(fmt.Sprintf("%s (%s)", info.Hostname, info.Arch))
+// RenderTopBar renders the desktop status bar with animated 8-bit retro mascot and telemetry
+func RenderTopBar(info system.HardwareInfo, animFrame int, st styles.ThemeStyles, lang i18n.Language, width int) string {
+	// Left: Animated Mascot Badge
+	mascotBadge := retro.GetBannerMascot(animFrame, st)
 
 	// Center: Telemetry Pills
 	var tempPill string
@@ -39,11 +37,21 @@ func RenderTopBar(info system.HardwareInfo, st styles.ThemeStyles, lang i18n.Lan
 	}
 
 	cpuPill := st.ButtonNormal.Render(fmt.Sprintf("Load: %.2f", info.Load1))
-	clockPill := st.ButtonNormal.Render(time.Now().Format("15:04:05"))
+	themePill := lipgloss.NewStyle().
+		Foreground(st.PrimaryColor).
+		Bold(true).
+		Render(fmt.Sprintf("[%s]", st.Name))
 
-	left := lipgloss.JoinHorizontal(lipgloss.Center, hostBadge, " ", hostInfo)
+	clockPill := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("#000000")).
+		Background(st.AccentColor).
+		Padding(0, 1).
+		Render(time.Now().Format("15:04:05"))
+
+	left := lipgloss.JoinHorizontal(lipgloss.Center, mascotBadge, " ", themePill)
 	center := lipgloss.JoinHorizontal(lipgloss.Center, tempPill, " ", ramPill, " ", cpuPill)
-	right := lipgloss.JoinHorizontal(lipgloss.Center, clockPill)
+	right := clockPill
 
 	totalUsed := lipgloss.Width(left) + lipgloss.Width(center) + lipgloss.Width(right)
 	spacing := (width - totalUsed) / 2

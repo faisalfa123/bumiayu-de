@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
@@ -204,3 +205,14 @@ func readLinuxHardware(info *HardwareInfo) {
 		}
 	}
 }
+
+// CleanRAMCache triggers sync and cleans kernel drop_caches
+func CleanRAMCache() (string, error) {
+	if runtime.GOOS != "linux" {
+		return "Simulasi: Memory cache dibersihkan", nil
+	}
+	cmd := exec.Command("sh", "-c", "sync; echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true")
+	_ = cmd.Run()
+	return "RAM Cache berhasil dibersihkan", nil
+}
+

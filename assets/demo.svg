@@ -1,0 +1,194 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 500" width="100%" height="100%">
+  <defs>
+    <style>
+      @keyframes blink {
+        0%, 49% { opacity: 1; }
+        50%, 100% { opacity: 0; }
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 0.9; }
+        50% { transform: scale(1.04); opacity: 1; filter: drop-shadow(0 0 8px #00F5FF); }
+      }
+      @keyframes eqBounce1 {
+        0%, 100% { height: 18px; y: 172px; }
+        50% { height: 32px; y: 158px; }
+      }
+      @keyframes eqBounce2 {
+        0%, 100% { height: 28px; y: 162px; }
+        50% { height: 12px; y: 178px; }
+      }
+      @keyframes eqBounce3 {
+        0%, 100% { height: 14px; y: 176px; }
+        50% { height: 36px; y: 154px; }
+      }
+      @keyframes eqBounce4 {
+        0%, 100% { height: 30px; y: 160px; }
+        50% { height: 20px; y: 170px; }
+      }
+      @keyframes tickerScroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-400px); }
+      }
+      @keyframes mascotWiggle {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+      }
+      .font-mono { font-family: 'Courier New', Courier, 'Fira Code', monospace; }
+      .cursor { animation: blink 1s infinite; }
+      .glow-border { animation: pulse 3s infinite ease-in-out; }
+      .eq-bar1 { animation: eqBounce1 0.8s infinite ease-in-out; }
+      .eq-bar2 { animation: eqBounce2 0.7s infinite ease-in-out 0.2s; }
+      .eq-bar3 { animation: eqBounce3 0.9s infinite ease-in-out 0.1s; }
+      .eq-bar4 { animation: eqBounce4 0.6s infinite ease-in-out 0.3s; }
+      .mascot { animation: mascotWiggle 1.2s infinite ease-in-out; }
+    </style>
+    <linearGradient id="cyberBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A0E1A" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+    <linearGradient id="cyanGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F5FF" />
+      <stop offset="100%" stop-color="#E024A5" />
+    </linearGradient>
+  </defs>
+
+  <!-- Terminal Window Frame -->
+  <rect x="0" y="0" width="880" height="500" rx="12" fill="url(#cyberBg)" stroke="#374151" stroke-width="2" />
+  
+  <!-- Window Header Bar -->
+  <rect x="0" y="0" width="880" height="34" rx="12" fill="#161D2B" />
+  <rect x="0" y="24" width="880" height="10" fill="#161D2B" />
+  <circle cx="20" cy="17" r="6" fill="#FF5555" />
+  <circle cx="38" cy="17" r="6" fill="#FBBF24" />
+  <circle cx="56" cy="17" r="6" fill="#22C55E" />
+  <text x="440" y="22" fill="#9CA3AF" font-size="12" text-anchor="middle" class="font-mono">antigravity@odroid-c2: ~ / bumiayu-tui [24 FPS Window Manager]</text>
+
+  <!-- TOP BAR DESKTOP -->
+  <rect x="14" y="44" width="852" height="32" rx="4" fill="#0D1117" stroke="#1F2937" />
+  
+  <!-- Mascot Badge -->
+  <g class="mascot">
+    <rect x="22" y="49" width="160" height="22" rx="3" fill="#00F5FF" />
+    <text x="102" y="65" fill="#0A0E1A" font-size="11" font-weight="bold" text-anchor="middle" class="font-mono">👾 (•_•) BUMIAYU-DE</text>
+  </g>
+  <text x="190" y="65" fill="#00F5FF" font-size="11" font-weight="bold" class="font-mono">[16-Bit Cyber-Arcade]</text>
+
+  <!-- Center Telemetry Pills -->
+  <rect x="365" y="50" width="80" height="20" rx="3" fill="#1F2937" stroke="#374151" />
+  <text x="405" y="64" fill="#38BDF8" font-size="11" text-anchor="middle" class="font-mono">❄️ 42.1°C</text>
+
+  <rect x="455" y="50" width="165" height="20" rx="3" fill="#1F2937" stroke="#374151" />
+  <text x="537" y="64" fill="#22C55E" font-size="11" text-anchor="middle" class="font-mono">RAM: 412/2048 MB (20%)</text>
+
+  <rect x="630" y="50" width="90" height="20" rx="3" fill="#1F2937" stroke="#374151" />
+  <text x="675" y="64" fill="#F3F4F6" font-size="11" text-anchor="middle" class="font-mono">Load: 0.18</text>
+
+  <!-- Clock Badge -->
+  <rect x="765" y="49" width="90" height="22" rx="3" fill="#E024A5" />
+  <text x="810" y="65" fill="#0A0E1A" font-size="11" font-weight="bold" text-anchor="middle" class="font-mono">23:55:08</text>
+
+  <!-- 24 FPS RUNNING TICKER -->
+  <rect x="14" y="82" width="852" height="22" rx="2" fill="#0B132B" stroke="#00F5FF" stroke-width="0.5" />
+  <rect x="14" y="82" width="90" height="22" rx="2" fill="#E024A5" />
+  <text x="59" y="97" fill="#0A0E1A" font-size="10" font-weight="bold" text-anchor="middle" class="font-mono">📡 TICKER</text>
+  <text x="115" y="97" fill="#00F5FF" font-size="11" class="font-mono">⚡ BUMIAYU TUI WM  ✦  ADAPTIVE 24 FPS READY  ✦  PRESS [SPACE] FOR UNIFIED LAUNCHER  ✦  ARM64 OPTIMIZED</text>
+
+  <!-- 2x2 TILED WORKSPACES GRID -->
+  <!-- Pane 1: Telemetry (Active Glow Border) -->
+  <rect x="14" y="112" width="420" height="150" rx="6" fill="#111827" stroke="#00F5FF" stroke-width="1.5" class="glow-border" />
+  <text x="28" y="132" fill="#00F5FF" font-size="12" font-weight="bold" class="font-mono">📊 [1] TELEMETRI HARDWARE</text>
+  <rect x="235" y="121" width="45" height="15" rx="3" fill="#E024A5" />
+  <text x="257" y="132" fill="#0A0E1A" font-size="9" font-weight="bold" text-anchor="middle" class="font-mono">LIVE</text>
+  <line x1="28" y1="140" x2="420" y2="140" stroke="#1F2937" />
+
+  <!-- VU Meters -->
+  <text x="28" y="158" fill="#F3F4F6" font-size="10" class="font-mono">CPU    [<tspan fill="#00FF88">████</tspan><tspan fill="#374151">░░░░░░░░░░░░</tspan>]  25%</text>
+  <text x="28" y="174" fill="#F3F4F6" font-size="10" class="font-mono">RAM    [<tspan fill="#00FF88">███</tspan><tspan fill="#374151">░░░░░░░░░░░░░</tspan>]  20%</text>
+  <text x="28" y="190" fill="#F3F4F6" font-size="10" class="font-mono">TEMP   [<tspan fill="#FFCC00">██████</tspan><tspan fill="#374151">░░░░░░░░░░</tspan>]  42%</text>
+
+  <!-- Dynamic Equalizer Bars -->
+  <text x="28" y="212" fill="#00F5FF" font-size="10" class="font-mono">EQ 24FPS:</text>
+  <rect x="95" y="202" width="6" height="12" fill="#00FF88" rx="1" class="eq-bar1" />
+  <rect x="105" y="198" width="6" height="16" fill="#00FF88" rx="1" class="eq-bar2" />
+  <rect x="115" y="194" width="6" height="20" fill="#FFCC00" rx="1" class="eq-bar3" />
+  <rect x="125" y="192" width="6" height="22" fill="#FF3366" rx="1" class="eq-bar4" />
+  <text x="145" y="212" fill="#22C55E" font-size="10" font-weight="bold" class="font-mono">💚 [PULSE OK]</text>
+  
+  <text x="28" y="235" fill="#9CA3AF" font-size="10" class="font-mono">💻 ODROID-C2 (Amlogic S905) | Arch: arm64</text>
+  <text x="28" y="250" fill="#9CA3AF" font-size="10" class="font-mono">🌐 Host: odroid-server | Uptime: 4d 12h 30m</text>
+
+  <!-- Pane 2: Systemd Services -->
+  <rect x="446" y="112" width="420" height="150" rx="6" fill="#111827" stroke="#374151" stroke-width="1" />
+  <text x="460" y="132" fill="#F3F4F6" font-size="12" font-weight="bold" class="font-mono">⚙️ [2] LAYANAN SYSTEMD</text>
+  <text x="790" y="132" fill="#9CA3AF" font-size="10" class="font-mono">10 Unit</text>
+  <line x1="460" y1="140" x2="850" y2="140" stroke="#1F2937" />
+
+  <text x="460" y="158" fill="#22C55E" font-size="10" class="font-mono">● RUN   ssh.service        4.8MB</text>
+  <rect x="456" y="165" width="400" height="18" fill="#1F2937" rx="2" />
+  <text x="460" y="177" fill="#00F5FF" font-size="10" font-weight="bold" class="font-mono">► ● RUN   nginx.service      6.2MB</text>
+  <text x="460" y="196" fill="#22C55E" font-size="10" class="font-mono">● RUN   fail2ban.service  14.5MB</text>
+  <text x="460" y="214" fill="#9CA3AF" font-size="10" class="font-mono">○ STOP  docker.service     0.0MB</text>
+  <text x="460" y="232" fill="#9CA3AF" font-size="10" class="font-mono">○ STOP  wireguard.service  0.0MB</text>
+  <text x="460" y="252" fill="#9CA3AF" font-size="9" class="font-mono">[S]: Start  |  [T]: Stop  |  [R]: Restart</text>
+
+  <!-- Pane 3: Task Manager (OOM) -->
+  <rect x="14" y="272" width="420" height="145" rx="6" fill="#111827" stroke="#374151" stroke-width="1" />
+  <text x="28" y="292" fill="#F3F4F6" font-size="12" font-weight="bold" class="font-mono">⚡ [3] TASK MANAGER (OOM)</text>
+  <text x="360" y="292" fill="#9CA3AF" font-size="10" class="font-mono">7 Pros</text>
+  <line x1="28" y1="300" x2="420" y2="300" stroke="#1F2937" />
+
+  <text x="28" y="318" fill="#F3F4F6" font-size="10" class="font-mono">1205  dockerd       84.0MB  <tspan fill="#FF3366">OOM:200!</tspan></text>
+  <text x="28" y="336" fill="#F3F4F6" font-size="10" class="font-mono">1350  containerd    42.0MB  <tspan fill="#FFCC00">OOM:120 </tspan></text>
+  <text x="28" y="354" fill="#F3F4F6" font-size="10" class="font-mono">1042  nginx:worker  18.5MB  <tspan fill="#9CA3AF">OOM:50  </tspan></text>
+  <text x="28" y="372" fill="#F3F4F6" font-size="10" class="font-mono">1420  bumiayu-de    12.4MB  <tspan fill="#22C55E">OOM:5   </tspan></text>
+  <text x="28" y="402" fill="#9CA3AF" font-size="9" class="font-mono">[K]: Kill Process SIGTERM (Protected Safety Guard)</text>
+
+  <!-- Pane 4: Network & Ports -->
+  <rect x="446" y="272" width="420" height="145" rx="6" fill="#111827" stroke="#374151" stroke-width="1" />
+  <text x="460" y="292" fill="#F3F4F6" font-size="12" font-weight="bold" class="font-mono">🛡️ [4] JARINGAN &amp; PORT</text>
+  <text x="790" y="292" fill="#22C55E" font-size="10" font-weight="bold" class="font-mono">🛡️ UFW ON</text>
+  <line x1="460" y1="300" x2="850" y2="300" stroke="#1F2937" />
+
+  <text x="460" y="318" fill="#F3F4F6" font-size="10" class="font-mono">22    tcp   <tspan fill="#FF3366">PUBLIK</tspan>  sshd (OpenSSH Server)</text>
+  <text x="460" y="336" fill="#F3F4F6" font-size="10" class="font-mono">80    tcp   <tspan fill="#FF3366">PUBLIK</tspan>  nginx (HTTP Web)</text>
+  <text x="460" y="354" fill="#F3F4F6" font-size="10" class="font-mono">443   tcp   <tspan fill="#22C55E">LOKAL </tspan>  nginx (HTTPS SSL)</text>
+  <text x="460" y="372" fill="#F3F4F6" font-size="10" class="font-mono">53    udp   <tspan fill="#22C55E">LOKAL </tspan>  systemd-resolved (DNS)</text>
+  <text x="460" y="402" fill="#9CA3AF" font-size="9" class="font-mono">[U]: Toggle Firewall UFW</text>
+
+  <!-- FLOATING SPOTLIGHT MODAL OVERLAY (With Ghost-Text Demo!) -->
+  <g filter="drop-shadow(0 8px 24px rgba(0, 0, 0, 0.85))">
+    <rect x="180" y="160" width="520" height="185" rx="8" fill="#0D1117" stroke="#00F5FF" stroke-width="2" />
+    <rect x="190" y="170" width="220" height="20" rx="3" fill="#00F5FF" />
+    <text x="300" y="184" fill="#0A0E1A" font-size="10" font-weight="bold" text-anchor="middle" class="font-mono">🔍 UNIFIED SPOTLIGHT LAUNCHER</text>
+
+    <!-- Query Input with Ghost-Text -->
+    <rect x="195" y="198" width="490" height="28" rx="4" fill="#161D2B" stroke="#00F5FF" stroke-width="1" />
+    <text x="205" y="216" fill="#00F5FF" font-size="11" font-weight="bold" class="font-mono">⚡ Ketik Perintah:</text>
+    <text x="325" y="216" fill="#F3F4F6" font-size="11" font-weight="bold" class="font-mono">ngi</text>
+    <rect x="348" y="206" width="2" height="13" fill="#00F5FF" class="cursor" />
+    <!-- Ghost-Text prediction! -->
+    <text x="352" y="216" fill="#6B7280" font-size="11" font-style="italic" class="font-mono">nx.service (Tekan Tab / →)</text>
+
+    <!-- Dropdown Fuzzy Suggestions -->
+    <rect x="195" y="234" width="490" height="22" fill="#1E293B" rx="2" />
+    <text x="205" y="249" fill="#00F5FF" font-size="10" font-weight="bold" class="font-mono">► [Systemd] nginx.service - Kelola Nginx Web Server (Start/Restart)</text>
+
+    <text x="217" y="271" fill="#9CA3AF" font-size="10" class="font-mono">  [Sistem]  &gt;clean (Bersihkan RAM Cache &amp; Pagecache)</text>
+    <text x="217" y="291" fill="#9CA3AF" font-size="10" class="font-mono">  [Jaringan] &gt;ports (Audit Port Terbuka Publik)</text>
+    <text x="217" y="311" fill="#9CA3AF" font-size="10" class="font-mono">  [Tampilan] &gt;theme (Ganti Tema Retro 16-Bit Cyber / DOS)</text>
+
+    <text x="440" y="335" fill="#6B7280" font-size="9" text-anchor="middle" class="font-mono">[Tab / →]: Lengkapi Teks  |  [↑/↓]: Pilih  |  [Enter]: Eksekusi  |  [Esc]: Tutup</text>
+  </g>
+
+  <!-- BOTTOM QUICK HELP BAR (PERSISTENT FOOTER) -->
+  <rect x="14" y="460" width="852" height="28" rx="4" fill="#0D1117" stroke="#1F2937" />
+  <text x="26" y="478" fill="#F3F4F6" font-size="10" class="font-mono">
+    <tspan fill="#00F5FF" font-weight="bold">[Space]</tspan> Launcher   
+    <tspan fill="#00F5FF" font-weight="bold">[Tab/hjkl]</tspan> Nav   
+    <tspan fill="#00F5FF" font-weight="bold">[f]</tspan> Zoom Fullscreen   
+    <tspan fill="#00F5FF" font-weight="bold">[1-4]</tspan> Panels   
+    <tspan fill="#00F5FF" font-weight="bold">[T]</tspan> Tema Retro   
+    <tspan fill="#00F5FF" font-weight="bold">[?]</tspan> Arcade Controls Help   
+    <tspan fill="#00F5FF" font-weight="bold">[q]</tspan> Keluar
+  </text>
+</svg>
