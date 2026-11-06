@@ -137,9 +137,14 @@ func getPaneBox(title string, badge string, content string, isFocused bool, st s
 		Foreground(headerColor).
 		Render(title) + badgeRender
 
+	divLen := width - 6
+	if divLen < 1 {
+		divLen = 1
+	}
+
 	inner := lipgloss.JoinVertical(lipgloss.Left,
 		header,
-		lipgloss.NewStyle().Foreground(st.BorderColor).Render(strings.Repeat("─", width-6)),
+		lipgloss.NewStyle().Foreground(st.BorderColor).Render(strings.Repeat("─", divLen)),
 		content,
 	)
 
@@ -219,8 +224,16 @@ func renderServicesPane(services []system.ServiceItem, cursor int, st styles.The
 		}
 
 		name := svc.Name
-		if len(name) > width-24 {
-			name = name[:width-27] + "..."
+		maxSvcLen := width - 26
+		if maxSvcLen < 6 {
+			maxSvcLen = 6
+		}
+		if len(name) > maxSvcLen {
+			if maxSvcLen > 3 {
+				name = name[:maxSvcLen-3] + "..."
+			} else {
+				name = name[:maxSvcLen]
+			}
 		}
 
 		line := fmt.Sprintf("%-6s %-18s %4.1fMB", stateBadge, name, svc.MemoryMB)
@@ -279,8 +292,16 @@ func renderProcessesPane(processes []system.ProcessItem, cursor int, st styles.T
 		}
 
 		name := p.Name
-		if len(name) > width-28 {
-			name = name[:width-31] + "..."
+		maxNameLen := width - 32
+		if maxNameLen < 6 {
+			maxNameLen = 6
+		}
+		if len(name) > maxNameLen {
+			if maxNameLen > 3 {
+				name = name[:maxNameLen-3] + "..."
+			} else {
+				name = name[:maxNameLen]
+			}
 		}
 
 		line := fmt.Sprintf("%-5d %-12s %5.1fMB %s", p.PID, name, p.MemMB, oomBadge)

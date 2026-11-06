@@ -604,11 +604,11 @@ func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.
 func (m Model) View() string {
 	width := m.width
 	height := m.height
-	if width < 50 {
-		width = 50
+	if width < 80 {
+		width = 80
 	}
-	if height < 18 {
-		height = 18
+	if height < 24 {
+		height = 24
 	}
 
 	st := styles.GetTheme(m.ThemeMode)
