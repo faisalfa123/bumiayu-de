@@ -23,6 +23,7 @@ type UserConfig struct {
 	TargetFPS          int    `json:"target_fps"`           // 24, 60, or 0 (adaptive)
 	AutoCleanMinutes   int    `json:"auto_clean_minutes"`   // 0 (off), 15, 30, 60, 360
 	AnimatedBG         string `json:"animated_bg"`          // "auto", "sawah", "gunung", "sakalibel", "senja", "malam", "curug", "off"
+	BGDimLevel         string `json:"bg_dim_level"`         // "low", "med", "high"
 }
 
 // GetConfigDir returns path to ~/.config/bumiayu
@@ -108,7 +109,7 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v1.0.3",
+		ConfigVersion:     "v1.0.4",
 		Theme:             "cyber",
 		WMModel:           "tiling",
 		Language:          "id",
@@ -121,5 +122,6 @@ func DefaultConfig() UserConfig {
 		TargetFPS:         24,
 		AutoCleanMinutes:  0,
 		AnimatedBG:        "auto",
+		BGDimLevel:        "med",
 	}
 }

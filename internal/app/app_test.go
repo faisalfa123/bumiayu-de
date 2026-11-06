@@ -89,4 +89,21 @@ func TestExecuteLauncherBackgroundCommands(t *testing.T) {
 			t.Errorf("Expected AnimatedBG to be %s after command %s, got %s", tc.expected, tc.cmd, m.AnimatedBG)
 		}
 	}
+
+	dimTests := []struct {
+		cmd      string
+		expected string
+	}{
+		{"bg_dim_low", "low"},
+		{"bg_dim_med", "med"},
+		{"bg_dim_high", "high"},
+	}
+
+	for _, tc := range dimTests {
+		item := launcher.LauncherItem{Command: tc.cmd}
+		_, _ = m.executeLauncherItem(item)
+		if m.BGDimLevel != tc.expected {
+			t.Errorf("Expected BGDimLevel to be %s after command %s, got %s", tc.expected, tc.cmd, m.BGDimLevel)
+		}
+	}
 }

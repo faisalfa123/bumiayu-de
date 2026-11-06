@@ -65,8 +65,8 @@ Berikut adalah demonstrasi visual antarmuka **Bumiayu TUI** dengan nuansa Window
 * **24 FPS Mulus**: Saat navigasi keyboard, running marquee ticker, animasi equalizer audio retro, dan sprite maskot bergerak di 24 frame per detik (~41ms).
 * **Auto Low-Power Throttling (2 FPS)**: Saat tidak ada interaksi selama 2.5 detik, sistem otomatis memperlambat ke mode standby hemat daya (1–2 FPS). Penggunaan CPU tetap **< 2%** di ODROID-C2 (ARM64) dan sangat hemat kuota SSH!
 
-### 4. 🌄 Panorama Animasi Background Berjalan 24 FPS (Pixel & ASCII Runners)
-Dapat diubah atau dimatikan kapan saja lewat Spotlight Launcher (`>bg ...`) atau tombol cepat **`B`**:
+### 4. 🌄 Full-Screen 2D Compositor: Animasi Background Translucent Berjalan 24 FPS
+Background animasi hidup bergerak di seluruh kanvas layar penuh terminal (*full-screen*). Panel jendela kerja memiliki efek opasitas/transparan redup (*dimmed translucent tint*) di balik teks sistem yang kontras dan tajam:
 * **`>bg auto` (Dinamis Waktu Server)**: Otomatis berganti mengikuti siklus waktu server (Pagi: Fajar Slamet, Siang: Sawah Subur, Sore: Lentera Senja, Awal Malam: Sakalibel Ekspres, Larut: Langit Berbintang).
 * **`>bg sawah`**: Petani membajak sawah terasering & kerbau berjalan menyusuri pematang lembah Slamet.
 * **`>bg gunung`**: Siluet megah Gunung Slamet dengan kawah berasap tipis, awan berarak, dan hutan pinus.
@@ -75,6 +75,10 @@ Dapat diubah atau dimatikan kapan saja lewat Spotlight Launcher (`>bg ...`) atau
 * **`>bg malam`**: Langit malam berbintang pekat dengan kilatan meteor periodik & kunang-kunang.
 * **`>bg curug`**: Percikan air terjun Curug Cipendok berarus deras menyejukkan server.
 * **`>bg off`**: Matikan panorama latar belakang untuk tampilan minimalis gelap murni.
+* **Pengaturan Keredupan Latar (Dim / Opacity Level)**:
+  * **`>bg dim low`** — Opasitas latar ringan / lebih terang (transparan lebih nyata).
+  * **`>bg dim med`** — Opasitas latar sedang / seimbang (Default estetik).
+  * **`>bg dim high`** — Opasitas latar kuat / sangat redup (Fokus maksimal pada data teks).
 
 ### 5. 🔀 3 Model Tata Letak Jendela (Layout Switcher)
 Ubah tata letak jendela kerja secara instan lewat Spotlight Launcher:

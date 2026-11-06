@@ -58,6 +58,7 @@ func TestAnimatedBackground(t *testing.T) {
 	}
 
 	widths := []int{20, 40, 80, 120}
+	heights := []int{10, 24, 30}
 	frames := []int{0, 1, 12, 24, 48, 100}
 
 	for _, p := range presets {
@@ -67,18 +68,21 @@ func TestAnimatedBackground(t *testing.T) {
 		}
 
 		for _, w := range widths {
-			for _, f := range frames {
-				out := RenderAnimatedBackground(p, f, w, st, 4)
-				if len(out) == 0 {
-					t.Errorf("Expected non-empty output for preset %s at width %d, frame %d", p, w, f)
+			for _, h := range heights {
+				for _, f := range frames {
+					canvas := Generate2DCanvas(p, f, w, h, "med")
+					if len(canvas) != h || len(canvas[0]) != w {
+						t.Fatalf("Expected canvas of size %dx%d, got %dx%d", w, h, len(canvas[0]), len(canvas))
+					}
+
+					mockFG := "│ CPU  25% │   │ RAM 20% │\n│ TEMP 42% │   │ LOAD 1  │"
+					out := CompositeCanvas(canvas, mockFG, w, h, "med", st.CardBg)
+					if len(out) == 0 {
+						t.Errorf("Expected non-empty composite output for preset %s", p)
+					}
 				}
 			}
 		}
-	}
-
-	// Verify BGOff returns empty string
-	if out := RenderAnimatedBackground(BGOff, 0, 80, st, 4); out != "" {
-		t.Errorf("Expected empty string for BGOff, got %s", out)
 	}
 
 	// Verify NextBG cycles properly

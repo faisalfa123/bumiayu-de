@@ -34,7 +34,7 @@ type TelemetryMsg struct {
 type AutoCleanMsg string
 
 // AppVersion is the current version displayed with BETA flag
-const AppVersion = "v1.0.3"
+const AppVersion = "v1.0.4"
 
 // Model is the main state of Bumiayu TUI Desktop Environment
 type Model struct {
@@ -49,6 +49,8 @@ type Model struct {
 
 	// Animated Background Runner Preset ("auto", "sawah", "gunung", "sakalibel", "senja", "malam", "curug", "off")
 	AnimatedBG string
+	// Background Dim / Opacity Level ("low", "med", "high")
+	BGDimLevel string
 
 	// FPS Diagnostics
 	LastTickTime     time.Time
@@ -99,6 +101,7 @@ func InitialModel() Model {
 		TargetFPSConfig:  24,
 		AutoCleanMinutes: 0,
 		AnimatedBG:       "auto",
+		BGDimLevel:       "med",
 		WebServerPort:    8080,
 		Spotlight:        launcher.NewSpotlightState(),
 		WM: wm.WindowManagerState{
@@ -158,6 +161,12 @@ func (m *Model) applyUserConfig(cfg config.UserConfig) {
 		m.AnimatedBG = "auto"
 	}
 
+	if cfg.BGDimLevel != "" {
+		m.BGDimLevel = cfg.BGDimLevel
+	} else {
+		m.BGDimLevel = "med"
+	}
+
 	if cfg.Language == "en" {
 		m.Language = i18n.EN
 	} else {
@@ -204,6 +213,7 @@ func (m *Model) saveCurrentConfig() {
 		TargetFPS:         m.TargetFPSConfig,
 		AutoCleanMinutes:  m.AutoCleanMinutes,
 		AnimatedBG:        m.AnimatedBG,
+		BGDimLevel:        m.BGDimLevel,
 	}
 	_ = config.SaveConfig(cfg)
 }
@@ -789,6 +799,21 @@ func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.
 		m.StatusMessage = "Background: Animasi dimatikan (Mode Minimalis Bersih)"
 		m.saveCurrentConfig()
 
+	case cmd == "bg_dim_low":
+		m.BGDimLevel = "low"
+		m.StatusMessage = "Opasitas Latar: Rendah (Transparan Terang)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_dim_med":
+		m.BGDimLevel = "med"
+		m.StatusMessage = "Opasitas Latar: Sedang (Seimbang / Default)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_dim_high":
+		m.BGDimLevel = "high"
+		m.StatusMessage = "Opasitas Latar: Tinggi (Sangat Redup / Fokus Teks)"
+		m.saveCurrentConfig()
+
 	case strings.HasPrefix(cmd, "jump_"):
 		var idx int
 		fmt.Sscanf(cmd, "jump_%d", &idx)
@@ -841,19 +866,34 @@ func (m Model) View() string {
 		promptRender := lipgloss.NewStyle().Bold(true).Foreground(st.DangerColor).Render(m.ConfirmPrompt)
 		hint := lipgloss.NewStyle().Foreground(st.TextColor).Render("Tekan [Y / Enter] untuk Lanjut | [N / Esc] untuk Batal")
 		box := st.Modal.Width(60).Render(lipgloss.JoinVertical(lipgloss.Center, promptRender, "", hint))
-		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
+		placed := lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
+		if m.AnimatedBG != "off" {
+			canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
+			return retro.CompositeCanvas(canvas, placed, width, height, m.BGDimLevel, st.CardBg)
+		}
+		return placed
 	}
 
 	// 2. ARCADE HELP 'HOW TO PLAY' MODAL OVERLAY ('?' key)
 	if m.ShowHelp {
 		modal := help.RenderArcadeHelpModal(st, width, height)
-		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, modal)
+		placed := lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, modal)
+		if m.AnimatedBG != "off" {
+			canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
+			return retro.CompositeCanvas(canvas, placed, width, height, m.BGDimLevel, st.CardBg)
+		}
+		return placed
 	}
 
 	// 3. UNIFIED SPOTLIGHT LAUNCHER MODAL OVERLAY ('Space' or '/' key)
 	if m.Spotlight.Active {
 		spotlightModal := launcher.RenderSpotlight(m.Spotlight, st, width, height)
-		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, spotlightModal)
+		placed := lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, spotlightModal)
+		if m.AnimatedBG != "off" {
+			canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
+			return retro.CompositeCanvas(canvas, placed, width, height, m.BGDimLevel, st.CardBg)
+		}
+		return placed
 	}
 
 	// 4. MAIN WINDOW MANAGER INTERFACE
@@ -869,7 +909,7 @@ func (m Model) View() string {
 		"⚡ BUMIAYU TUI WINDOW MANAGER",
 		fmt.Sprintf("HOST: %s (%s)", m.Hardware.Hostname, m.Hardware.Arch),
 		fmt.Sprintf("TEMA: %s", st.Name),
-		fmt.Sprintf("BG: %s", retro.BGName(retro.AnimatedBGType(m.AnimatedBG))),
+		fmt.Sprintf("BG: %s [%s]", retro.BGName(retro.AnimatedBGType(m.AnimatedBG)), strings.ToUpper(m.BGDimLevel)),
 		fmt.Sprintf("FPS: %.0f [%s]", m.CurrentFPS, m.FPSCategory),
 		"TEKAN [SPACE] UNTUK SPOTLIGHT LAUNCHER",
 		"TEKAN [?] UNTUK BANTUAN ARCADE CONTROLS",
@@ -877,18 +917,7 @@ func (m Model) View() string {
 	}
 	tickerLine := retro.RenderMarqueeTicker(tickerMsgs, m.AnimFrame, width, st)
 
-	// 4c. Main Workspace: Tiled Layout, Master-Stack, or Zoomed Pane
-	bgBanner := ""
-	layoutHeight := height
-	if m.AnimatedBG != "off" && !m.WM.Zoomed {
-		bgLines := 4
-		if height < 26 {
-			bgLines = 3
-		}
-		layoutHeight = height - bgLines
-		bgBanner = retro.RenderAnimatedBackground(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, st, bgLines)
-	}
-
+	// 4c. Main Workspace: Tiled Layout, Master-Stack, or Zoomed Pane (Uses full height!)
 	tiledLayout := wm.RenderTiledLayout(
 		m.WM,
 		m.Hardware,
@@ -899,34 +928,31 @@ func (m Model) View() string {
 		m.AnimFrame,
 		st,
 		width,
-		layoutHeight,
+		height,
 	)
 
 	// 4d. Persistent Bottom Quickbar with Shortcuts Help
 	quickBar := help.RenderQuickBar(st, width, m.StatusMessage, m.WM.Zoomed)
 
-	var fullContent string
-	if bgBanner != "" {
-		fullContent = lipgloss.JoinVertical(lipgloss.Left,
-			topBar,
-			tickerLine,
-			tiledLayout,
-			bgBanner,
-			quickBar,
-		)
-	} else {
-		fullContent = lipgloss.JoinVertical(lipgloss.Left,
-			topBar,
-			tickerLine,
-			tiledLayout,
-			quickBar,
-		)
-	}
+	fullContent := lipgloss.JoinVertical(lipgloss.Left,
+		topBar,
+		tickerLine,
+		tiledLayout,
+		quickBar,
+	)
 
 	// Clamp to terminal height so no scrolling occurs inside alternate screen buffer
 	lines := strings.Split(fullContent, "\n")
 	if len(lines) > height {
 		lines = lines[:height]
 	}
-	return strings.Join(lines, "\n")
+	cleanContent := strings.Join(lines, "\n")
+
+	// 5. FULL-SCREEN 2D COMPOSITOR WITH TRANSLUCENT TINT
+	if m.AnimatedBG != "off" {
+		canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
+		return retro.CompositeCanvas(canvas, cleanContent, width, height, m.BGDimLevel, st.CardBg)
+	}
+
+	return cleanContent
 }

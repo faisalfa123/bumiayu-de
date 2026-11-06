@@ -1,10 +1,10 @@
 package retro
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
-	"github.com/bumiayu/bumiayu-de/internal/ui/styles"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -21,6 +21,19 @@ const (
 	BGCurug     AnimatedBGType = "curug"
 	BGSakalibel AnimatedBGType = "sakalibel"
 )
+
+// CanvasCell represents a single cell in the full-screen 2D background canvas
+type CanvasCell struct {
+	Char  rune
+	FG    string // Full brightness TrueColor ANSI sequence (for outside panels)
+	DimFG string // Translucent dimmed TrueColor ANSI sequence (for inside panels)
+}
+
+// VisualCell represents a parsed foreground cell with active ANSI styling
+type VisualCell struct {
+	Char rune
+	ANSI string
+}
 
 // NextBG cycles to the next background preset for shortcut toggle [B]
 func NextBG(current AnimatedBGType) AnimatedBGType {
@@ -89,101 +102,99 @@ func ResolveActiveBG(bgType AnimatedBGType, t time.Time) (AnimatedBGType, string
 	}
 }
 
-// RenderAnimatedBackground renders a moving 24 FPS ASCII / pixel art panorama runner
-func RenderAnimatedBackground(bgType AnimatedBGType, frame int, width int, st styles.ThemeStyles, maxLines int) string {
-	if bgType == BGOff || width < 20 || maxLines < 2 {
-		return ""
+func getDimColor(baseR, baseG, baseB uint8, dimLevel string) string {
+	var factor float64
+	switch dimLevel {
+	case "low":
+		factor = 0.35 // brighter, more visible
+	case "high":
+		factor = 0.12 // very dark/subtle
+	default: // "med"
+		factor = 0.22 // balanced medium
 	}
 
-	activeType, timeTag := ResolveActiveBG(bgType, time.Now())
+	r := uint8(float64(baseR) * factor)
+	g := uint8(float64(baseG) * factor)
+	b := uint8(float64(baseB) * factor)
 
-	contentW := width - 4
-	if contentW < 20 {
-		contentW = 20
+	if r < 12 {
+		r = 12
+	}
+	if g < 15 {
+		g = 15
+	}
+	if b < 24 {
+		b = 24
+	}
+	return fmt.Sprintf("\x1b[38;2;%d;%d;%dm", r, g, b)
+}
+
+func hexToBgANSI(color lipgloss.Color) string {
+	hex := string(color)
+	if len(hex) == 7 && hex[0] == '#' {
+		var r, g, b uint8
+		_, _ = fmt.Sscanf(hex[1:], "%02x%02x%02x", &r, &g, &b)
+		return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", r, g, b)
+	}
+	return "\x1b[48;2;17;24;39m"
+}
+
+// makeCanvasCell constructs a CanvasCell with both vibrant and dimmed ANSI TrueColor
+func makeCanvasCell(r rune, red, green, blue uint8, dimLevel string) CanvasCell {
+	return CanvasCell{
+		Char:  r,
+		FG:    fmt.Sprintf("\x1b[38;2;%d;%d;%dm", red, green, blue),
+		DimFG: getDimColor(red, green, blue, dimLevel),
+	}
+}
+
+// Generate2DCanvas produces a full 2D screen grid of CanvasCells for the given preset
+func Generate2DCanvas(bgType AnimatedBGType, frame, width, height int, dimLevel string) [][]CanvasCell {
+	if width < 10 {
+		width = 10
+	}
+	if height < 6 {
+		height = 6
 	}
 
-	var title string
-	var line1, line2, line3 string
+	activeType, _ := ResolveActiveBG(bgType, time.Now())
+	canvas := make([][]CanvasCell, height)
+	for y := 0; y < height; y++ {
+		canvas[y] = make([]CanvasCell, width)
+		for x := 0; x < width; x++ {
+			canvas[y][x] = CanvasCell{Char: ' '}
+		}
+	}
+
+	skyH := (height * 35) / 100
+	if skyH < 2 {
+		skyH = 2
+	}
+	horizonH := (height * 70) / 100
+	if horizonH <= skyH {
+		horizonH = skyH + 2
+	}
 
 	switch activeType {
 	case BGSawah:
-		title = "🌾 SAWAH TERASERING & KERBAU RUNNER"
-		if timeTag != "" {
-			title += " [" + timeTag + "]"
-		}
-		line1, line2, line3 = renderSawahLines(frame, contentW)
-
+		fillSawahCanvas(canvas, frame, width, height, skyH, horizonH, dimLevel)
 	case BGGunung:
-		title = "🏔️ GUNUNG SLAMET & AWAN BERARAK"
-		if timeTag != "" {
-			title += " [" + timeTag + "]"
-		}
-		line1, line2, line3 = renderGunungLines(frame, contentW)
-
+		fillGunungCanvas(canvas, frame, width, height, skyH, horizonH, dimLevel)
 	case BGSakalibel:
-		title = "🚂 KERETA API JEMBATAN SAKALIBEL BUMIAYU"
-		if timeTag != "" {
-			title += " [" + timeTag + "]"
-		}
-		line1, line2, line3 = renderSakalibelLines(frame, contentW)
-
+		fillSakalibelCanvas(canvas, frame, width, height, skyH, horizonH, dimLevel)
 	case BGSenja:
-		title = "🏮 LENTERA SENJA & TEH POCI BUMIAYU"
-		if timeTag != "" {
-			title += " [" + timeTag + "]"
-		}
-		line1, line2, line3 = renderSenjaLines(frame, contentW)
-
+		fillSenjaCanvas(canvas, frame, width, height, skyH, horizonH, dimLevel)
 	case BGMalam:
-		title = "🌌 LANGIT MALAM BERBINTANG & METEOR"
-		if timeTag != "" {
-			title += " [" + timeTag + "]"
-		}
-		line1, line2, line3 = renderMalamLines(frame, contentW)
-
+		fillMalamCanvas(canvas, frame, width, height, skyH, horizonH, dimLevel)
 	case BGCurug:
-		title = "🌊 CURUG CIPENDOK AIR TERJUN LEMBAH SLAMET"
-		if timeTag != "" {
-			title += " [" + timeTag + "]"
-		}
-		line1, line2, line3 = renderCurugLines(frame, contentW)
-
+		fillCurugCanvas(canvas, frame, width, height, skyH, horizonH, dimLevel)
 	default:
-		title = "🌾 SAWAH TERASERING BUMIAYU"
-		line1, line2, line3 = renderSawahLines(frame, contentW)
+		fillSawahCanvas(canvas, frame, width, height, skyH, horizonH, dimLevel)
 	}
 
-	// Title banner line
-	titleTag := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(st.PrimaryColor).
-		Render(" " + title + " • 24 FPS ")
-
-	dividerLen := contentW - lipgloss.Width(titleTag)
-	if dividerLen < 1 {
-		dividerLen = 1
-	}
-	divider := lipgloss.NewStyle().
-		Foreground(st.BorderColor).
-		Render(strings.Repeat("─", dividerLen))
-	headerLine := "  " + titleTag + divider
-
-	if maxLines <= 2 {
-		return lipgloss.JoinVertical(lipgloss.Left, headerLine, "  "+line2)
-	}
-	if maxLines == 3 {
-		return lipgloss.JoinVertical(lipgloss.Left, headerLine, "  "+line1, "  "+line2)
-	}
-
-	return lipgloss.JoinVertical(lipgloss.Left,
-		headerLine,
-		"  "+line1,
-		"  "+line2,
-		"  "+line3,
-	)
+	return canvas
 }
 
-// getScrolledRunes safely creates a looped rune slice of exact targetWidth shifted by offset
 func getScrolledRunes(pattern string, offset int, targetWidth int) []rune {
 	pRunes := []rune(pattern)
 	if len(pRunes) == 0 {
@@ -198,176 +209,367 @@ func getScrolledRunes(pattern string, offset int, targetWidth int) []rune {
 	return result
 }
 
-// overlayRunes safely stamps overlay onto base runes at startPos
-func overlayRunes(base []rune, overlay []rune, startPos int) []rune {
-	bLen := len(base)
-	oLen := len(overlay)
-	if bLen == 0 || oLen == 0 {
-		return base
-	}
-
-	for i := 0; i < oLen; i++ {
+func overlayCanvasRunes(row []CanvasCell, runes []rune, startPos int, r, g, b uint8, dimLevel string) {
+	rLen := len(runes)
+	rowLen := len(row)
+	for i := 0; i < rLen; i++ {
 		idx := startPos + i
-		if idx >= 0 && idx < bLen {
-			base[idx] = overlay[i]
+		if idx >= 0 && idx < rowLen {
+			row[idx] = makeCanvasCell(runes[i], r, g, b, dimLevel)
 		}
 	}
-	return base
 }
 
-// 1. SAWAH TERASERING & KERBAU
-func renderSawahLines(frame int, width int) (string, string, string) {
-	// Sky: Slow parallax clouds and flying birds
-	skyPattern := "          ☁️                        ~v~                ☁️           ~v~    ~v~          "
-	skyRunes := getScrolledRunes(skyPattern, frame/5, width)
-	line1 := lipgloss.NewStyle().Foreground(lipgloss.Color("#93C5FD")).Render(string(skyRunes))
-
-	// Midground: Saung & walking farmer with buffalo
-	midPattern := "   [🛖 Saung]             ,,,,,,                      [ Saung ]          ,,,,,,            "
-	midRunes := getScrolledRunes(midPattern, frame/3, width)
-
-	// Animate farmer walk cycle & buffalo head bob
-	step := (frame / 6) % 2
-	var farmerStr string
-	if step == 0 {
-		farmerStr = "(o_ /|\\ [===|   (o o)____/ @@"
-	} else {
-		farmerStr = "(o_ /|\\_ [===|  (- -)____/ @@"
+// 1. SAWAH TERASERING 2D GENERATOR
+func fillSawahCanvas(c [][]CanvasCell, frame, width, height, skyH, horizonH int, dimLevel string) {
+	// Sky zone (0 to skyH): Clouds, birds, morning sun
+	for y := 0; y < skyH; y++ {
+		var pattern string
+		var red, green, blue uint8
+		switch y % 3 {
+		case 0:
+			pattern = "          ☁️                        ~v~                ☁️           ~v~    ~v~          "
+			red, green, blue = 147, 197, 253 // Light Sky Blue
+		case 1:
+			pattern = "   ~v~                 ☀️  Matahari Pagi                 ~v~                     ☁️     "
+			red, green, blue = 253, 224, 71 // Sun Amber
+		default:
+			pattern = "                ☁️                                               ☁️                     "
+			red, green, blue = 224, 242, 254 // Wispy Cloud White
+		}
+		runes := getScrolledRunes(pattern, (frame/5)+y*7, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], red, green, blue, dimLevel)
+		}
 	}
-	actorPos := width / 4
-	midRunes = overlayRunes(midRunes, []rune(farmerStr), actorPos)
-	line2 := lipgloss.NewStyle().Foreground(lipgloss.Color("#FDE047")).Render(string(midRunes))
 
-	// Foreground: Swaying lush green rice stalks and shimmering irrigation water
-	forePattern := "🌾 ,,🌾,, ,,,🌾,,, _|||||_  ~ ~ ≈ ≈ ~ ~  🌾 ,,🌾,, ,,,🌾,,, _|||||_  ~ ~ ≈ ≈ ~ ~  "
-	foreRunes := getScrolledRunes(forePattern, frame, width)
-	line3 := lipgloss.NewStyle().Foreground(lipgloss.Color("#22C55E")).Render(string(foreRunes))
+	// Horizon zone (skyH to horizonH): Hills, Saung gubuk, walking farmer & buffalo
+	for y := skyH; y < horizonH; y++ {
+		ridgePattern := "  /~~~~~~~~~~~~~~~~\\            /~~~~~~~~\\                    /~~~~~~~~~~~~~~~~\\         "
+		runes := getScrolledRunes(ridgePattern, (frame/3)+y*11, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 99, 102, 241, dimLevel) // Mountain indigo
+		}
 
-	return line1, line2, line3
-}
-
-// 2. GUNUNG SLAMET & AWAN PARALLAX
-func renderGunungLines(frame int, width int) (string, string, string) {
-	// Peak with crater mist and drifting high clouds
-	peakPattern := "              /▲▲▲\\ ^~^~^                 ( ☁️ )                 /▲▲▲\\ ^~^~^                 "
-	peakRunes := getScrolledRunes(peakPattern, frame/6, width)
-	line1 := lipgloss.NewStyle().Foreground(lipgloss.Color("#A5B4FC")).Render(string(peakRunes))
-
-	// Slopes and dense pine forest foothills
-	slopePattern := "       /═══════════════════\\     ▲▲▲▲  ▲▲▲  ▲▲▲▲       /═══════════════════\\     ▲▲▲▲  ▲▲▲   "
-	slopeRunes := getScrolledRunes(slopePattern, frame/3, width)
-	line2 := lipgloss.NewStyle().Foreground(lipgloss.Color("#6366F1")).Render(string(slopeRunes))
-
-	// River valley: Kali Pedes & Kali Keruh with mountain wildflowers
-	valleyPattern := "~~≈≈~~ Kali Pedes ~~≈≈~~  ❀ ✿ ❀  ~~≈≈~~ Kali Keruh ~~≈≈~~  ❀ ✿ ❀  ~~≈≈~~ Lembah Slamet ~~≈≈~~ "
-	valleyRunes := getScrolledRunes(valleyPattern, frame, width)
-	line3 := lipgloss.NewStyle().Foreground(lipgloss.Color("#06B6D4")).Render(string(valleyRunes))
-
-	return line1, line2, line3
-}
-
-// 3. KERETA API SAKALIBEL EKSPRES
-func renderSakalibelLines(frame int, width int) (string, string, string) {
-	// Sky with steam puffs trailing from locomotive
-	steamPattern := "        o   O   °   (awan)               o   O   °   (awan)               o   O   °         "
-	steamRunes := getScrolledRunes(steamPattern, -frame/2, width)
-	line1 := lipgloss.NewStyle().Foreground(lipgloss.Color("#E2E8F0")).Render(string(steamRunes))
-
-	// Express train moving rapidly across the bridge rails
-	railPattern := "════════════════════════════════════════════════════════════════════════════════════════"
-	railRunes := getScrolledRunes(railPattern, 0, width)
-	trainStr := "[🚂 KAMANDAKA]═[🚃]═[🚃]═[🚃]═[🚃]"
-	trainPos := ((frame * 2) % (width + len(trainStr))) - len(trainStr)
-	railRunes = overlayRunes(railRunes, []rune(trainStr), trainPos)
-	line2 := lipgloss.NewStyle().Foreground(lipgloss.Color("#F59E0B")).Render(string(railRunes))
-
-	// Sakalibel Bridge tall arched pillars & Glagah river flowing beneath
-	archPattern := "   ||  (◠◠)  ||        ||  (◠◠)  ||   ~~~≈≈≈ Glagah & Kalikeruh ~~~≈≈≈   ||  (◠◠)  ||        "
-	archRunes := getScrolledRunes(archPattern, frame/4, width)
-	line3 := lipgloss.NewStyle().Foreground(lipgloss.Color("#38BDF8")).Render(string(archRunes))
-
-	return line1, line2, line3
-}
-
-// 4. LENTERA SENJA & TEH POCI
-func renderSenjaLines(frame int, width int) (string, string, string) {
-	// Sunset twilight sky with electrical wires & migrating birds
-	skyPattern := "──────•─────────•───────•─────── ~v~   ~v~ ──────•─────────•───────•─────── ~v~   ~v~ "
-	skyRunes := getScrolledRunes(skyPattern, frame/4, width)
-	line1 := lipgloss.NewStyle().Foreground(lipgloss.Color("#F97316")).Render(string(skyRunes))
-
-	// Hanging red lanterns with oscillating candle flicker
-	lanternPattern := "     [🏮]               [🏮]               [🏮]               [🏮]               [🏮]     "
-	lanternRunes := getScrolledRunes(lanternPattern, frame/3, width)
-	line2 := lipgloss.NewStyle().Foreground(lipgloss.Color("#EF4444")).Render(string(lanternRunes))
-
-	// Angkringan street with steaming Teh Poci & Mendoan
-	pociPattern := "♨️ Teh Poci Gula Batu Bumiayu ♨️  ░░▒▒▓▓  ♨️ Mendoan Anget ♨️  ░░▒▒▓▓  ♨️ Kopi Hangat ♨️    "
-	pociRunes := getScrolledRunes(pociPattern, frame/2, width)
-	line3 := lipgloss.NewStyle().Foreground(lipgloss.Color("#FBBF24")).Render(string(pociRunes))
-
-	return line1, line2, line3
-}
-
-// 5. LANGIT MALAM BERBINTANG & METEOR
-func renderMalamLines(frame int, width int) (string, string, string) {
-	// Deep cosmic sky with twinkling stars and periodic meteor streak
-	starPattern := "  ★     .       ✦       .    🌙    ★       .       ✦       .    ★       .       ✦       "
-	starRunes := getScrolledRunes(starPattern, frame/8, width)
-
-	// Meteor streak crossing sky every 64 frames
-	meteorCycle := frame % 64
-	if meteorCycle < 24 {
-		meteorStr := "═══════★"
-		meteorPos := meteorCycle * 4
-		starRunes = overlayRunes(starRunes, []rune(meteorStr), meteorPos)
+		if y == horizonH-1 {
+			// Saung and walking farmer & buffalo trail
+			step := (frame / 6) % 2
+			var farmerStr string
+			if step == 0 {
+				farmerStr = "[🛖 Saung]    (o_ /|\\ [===|   (o o)____/ @@"
+			} else {
+				farmerStr = "[🛖 Saung]    (o_ /|\\_ [===|  (- -)____/ @@"
+			}
+			actorPos := width / 4
+			overlayCanvasRunes(c[y], []rune(farmerStr), actorPos, 253, 224, 71, dimLevel)
+		}
 	}
-	line1 := lipgloss.NewStyle().Foreground(lipgloss.Color("#E0E7FF")).Render(string(starRunes))
 
-	// Nocturnal rolling hills & radio transmission tower with blinking red beacon
-	beacon := "🔴"
-	if (frame/12)%2 == 0 {
-		beacon = "⚪"
+	// Ground zone (horizonH to height): Terraced rice terraces & irrigation stream
+	for y := horizonH; y < height; y++ {
+		var pattern string
+		var red, green, blue uint8
+		if y%2 == 0 {
+			pattern = "🌾 ,,🌾,, ,,,🌾,,, _|||||_  🌾 ,,🌾,, ,,,🌾,,, _|||||_  🌾 ,,🌾,, ,,,🌾,,, _|||||_  "
+			red, green, blue = 34, 197, 94 // Lush emerald rice shoots
+		} else {
+			pattern = "  ~ ~ ≈ ≈ ~ ~  Lembah Subur Slamet  ~ ~ ≈ ≈ ~ ~  Pematang Sawah  ~ ~ ≈ ≈ ~ ~  "
+			red, green, blue = 56, 189, 248 // Irrigation water cyan
+		}
+		runes := getScrolledRunes(pattern, frame+y*5, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], red, green, blue, dimLevel)
+		}
 	}
-	towerStr := "/▲\\ (" + beacon + ")"
-	hillPattern := "   .   ✦   /~~~~~~~~\\    ★    /~~~~~~~~~~~~~~~~\\    .   ✦   /~~~~~~~~\\   "
-	hillRunes := getScrolledRunes(hillPattern, frame/4, width)
-	hillRunes = overlayRunes(hillRunes, []rune(towerStr), width/3)
-	line2 := lipgloss.NewStyle().Foreground(lipgloss.Color("#818CF8")).Render(string(hillRunes))
-
-	// Fireflies dancing in the night meadow
-	fireflyPattern := "  ✨   .   ✨   .   ✨   .   ✨  ,,.,,,,.  ✨   .   ✨   .   ✨  ,,.,,,,.  ✨   .   ✨   "
-	fireflyRunes := getScrolledRunes(fireflyPattern, frame/2, width)
-	line3 := lipgloss.NewStyle().Foreground(lipgloss.Color("#34D399")).Render(string(fireflyRunes))
-
-	return line1, line2, line3
 }
 
-// 6. CURUG CIPENDOK AIR TERJUN
-func renderCurugLines(frame int, width int) (string, string, string) {
-	// Mountain rocky cliff plunge
-	cliffPattern := "████\\ |||||||| /█████████\\ |||||||| /█████████\\ |||||||| /█████████\\ |||||||| /████"
-	cliffRunes := getScrolledRunes(cliffPattern, frame/6, width)
-	line1 := lipgloss.NewStyle().Foreground(lipgloss.Color("#64748B")).Render(string(cliffRunes))
-
-	// Cascading vertical water streams
-	fallCycle := frame % 3
-	var fallPattern string
-	switch fallCycle {
-	case 0:
-		fallPattern = "  ║ ░ ║ ▒ ║ ░ ║ ▒ ║  ░░▒▒  ║ ░ ║ ▒ ║ ░ ║ ▒ ║  ░░▒▒  ║ ░ ║ ▒ ║ ░ ║ ▒ ║  ░░▒▒  ║ ░ ║ ▒ ║ "
-	case 1:
-		fallPattern = "  ▒ ║ ░ ║ ▒ ║ ░ ║ ▒  ▒▒░░  ▒ ║ ░ ║ ▒ ║ ░ ║ ▒  ▒▒░░  ▒ ║ ░ ║ ▒ ║ ░ ║ ▒  ▒▒░░  ▒ ║ ░ ║ ▒ "
-	default:
-		fallPattern = "  ░ ║ ▒ ║ ░ ║ ▒ ║ ░  ░░▓▓  ░ ║ ▒ ║ ░ ║ ▒ ║ ░  ░░▓▓  ░ ║ ▒ ║ ░ ║ ▒ ║ ░  ░░▓▓  ░ ║ ▒ ║ ░ "
+// 2. GUNUNG SLAMET 2D GENERATOR
+func fillGunungCanvas(c [][]CanvasCell, frame, width, height, skyH, horizonH int, dimLevel string) {
+	// Peak zone
+	for y := 0; y < skyH; y++ {
+		peakPattern := "              /▲▲▲\\ ^~^~^                 ( ☁️ )                 /▲▲▲\\ ^~^~^                 "
+		runes := getScrolledRunes(peakPattern, (frame/6)+y*5, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 165, 180, 252, dimLevel)
+		}
 	}
-	fallRunes := getScrolledRunes(fallPattern, 0, width)
-	line2 := lipgloss.NewStyle().Foreground(lipgloss.Color("#38BDF8")).Render(string(fallRunes))
 
-	// Swirling turquoise plunge pool rapids & spray
-	poolPattern := "≈≈≈≈  Percikan Air Dingin Lembah Slamet  ≈≈≈≈ (●) (○) ≈≈≈≈  Curug Cipendok  ≈≈≈≈ (●) (○) "
-	poolRunes := getScrolledRunes(poolPattern, frame, width)
-	line3 := lipgloss.NewStyle().Foreground(lipgloss.Color("#0EA5E9")).Render(string(poolRunes))
+	// Slopes and pine forests
+	for y := skyH; y < horizonH; y++ {
+		var pattern string
+		if y%2 == 0 {
+			pattern = "       /═══════════════════\\     ▲▲▲▲  ▲▲▲  ▲▲▲▲       /═══════════════════\\     ▲▲▲▲  ▲▲▲   "
+		} else {
+			pattern = "    ▲▲▲▲▲▲  ▲▲▲▲  ▲▲▲▲▲▲     /═════════════════\\    ▲▲▲▲▲▲  ▲▲▲▲  ▲▲▲▲▲▲     /═════════\\   "
+		}
+		runes := getScrolledRunes(pattern, (frame/3)+y*8, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 99, 102, 241, dimLevel)
+		}
+	}
 
-	return line1, line2, line3
+	// Valley & streams
+	for y := horizonH; y < height; y++ {
+		valleyPattern := "~~≈≈~~ Kali Pedes ~~≈≈~~  ❀ ✿ ❀  ~~≈≈~~ Kali Keruh ~~≈≈~~  ❀ ✿ ❀  ~~≈≈~~ Lembah Slamet ~~≈≈~~ "
+		runes := getScrolledRunes(valleyPattern, frame+y*4, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 6, 182, 212, dimLevel)
+		}
+	}
+}
+
+// 3. KERETA API SAKALIBEL 2D GENERATOR
+func fillSakalibelCanvas(c [][]CanvasCell, frame, width, height, skyH, horizonH int, dimLevel string) {
+	// Sky with steam puffs
+	for y := 0; y < skyH; y++ {
+		steamPattern := "        o   O   °   (awan)               o   O   °   (awan)               o   O   °         "
+		runes := getScrolledRunes(steamPattern, (-frame/2)+y*9, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 226, 232, 240, dimLevel)
+		}
+	}
+
+	// Rails and express train
+	for y := skyH; y < horizonH; y++ {
+		railPattern := "════════════════════════════════════════════════════════════════════════════════════════"
+		runes := getScrolledRunes(railPattern, 0, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 148, 163, 184, dimLevel)
+		}
+		if y == horizonH-2 {
+			trainStr := "[🚂 KAMANDAKA]═[🚃]═[🚃]═[🚃]═[🚃]"
+			trainPos := ((frame * 2) % (width + len(trainStr))) - len(trainStr)
+			overlayCanvasRunes(c[y], []rune(trainStr), trainPos, 245, 158, 11, dimLevel)
+		}
+	}
+
+	// Arches & River Glagah
+	for y := horizonH; y < height; y++ {
+		archPattern := "   ||  (◠◠)  ||        ||  (◠◠)  ||   ~~~≈≈≈ Glagah & Kalikeruh ~~~≈≈≈   ||  (◠◠)  ||        "
+		runes := getScrolledRunes(archPattern, (frame/4)+y*6, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 56, 189, 248, dimLevel)
+		}
+	}
+}
+
+// 4. LENTERA SENJA 2D GENERATOR
+func fillSenjaCanvas(c [][]CanvasCell, frame, width, height, skyH, horizonH int, dimLevel string) {
+	for y := 0; y < skyH; y++ {
+		skyPattern := "──────•─────────•───────•─────── ~v~   ~v~ ──────•─────────•───────•─────── ~v~   ~v~ "
+		runes := getScrolledRunes(skyPattern, (frame/4)+y*7, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 249, 115, 22, dimLevel)
+		}
+	}
+
+	for y := skyH; y < horizonH; y++ {
+		lanternPattern := "     [🏮]               [🏮]               [🏮]               [🏮]               [🏮]     "
+		runes := getScrolledRunes(lanternPattern, (frame/3)+y*5, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 239, 68, 68, dimLevel)
+		}
+	}
+
+	for y := horizonH; y < height; y++ {
+		pociPattern := "♨️ Teh Poci Gula Batu Bumiayu ♨️  ░░▒▒▓▓  ♨️ Mendoan Anget ♨️  ░░▒▒▓▓  ♨️ Kopi Hangat ♨️    "
+		runes := getScrolledRunes(pociPattern, (frame/2)+y*4, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 251, 191, 36, dimLevel)
+		}
+	}
+}
+
+// 5. LANGIT MALAM BERBINTANG 2D GENERATOR
+func fillMalamCanvas(c [][]CanvasCell, frame, width, height, skyH, horizonH int, dimLevel string) {
+	for y := 0; y < skyH; y++ {
+		starPattern := "  ★     .       ✦       .    🌙    ★       .       ✦       .    ★       .       ✦       "
+		runes := getScrolledRunes(starPattern, (frame/8)+y*13, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 224, 231, 255, dimLevel)
+		}
+
+		if y == 1 {
+			meteorCycle := frame % 64
+			if meteorCycle < 24 {
+				meteorStr := "═══════★"
+				meteorPos := meteorCycle * 4
+				overlayCanvasRunes(c[y], []rune(meteorStr), meteorPos, 254, 240, 138, dimLevel)
+			}
+		}
+	}
+
+	for y := skyH; y < horizonH; y++ {
+		hillPattern := "   .   ✦   /~~~~~~~~\\    ★    /~~~~~~~~~~~~~~~~\\    .   ✦   /~~~~~~~~\\   "
+		runes := getScrolledRunes(hillPattern, (frame/4)+y*9, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 129, 140, 248, dimLevel)
+		}
+		if y == horizonH-1 {
+			beacon := "🔴"
+			if (frame/12)%2 == 0 {
+				beacon = "⚪"
+			}
+			towerStr := "/▲\\ (" + beacon + ")"
+			overlayCanvasRunes(c[y], []rune(towerStr), width/3, 239, 68, 68, dimLevel)
+		}
+	}
+
+	for y := horizonH; y < height; y++ {
+		fireflyPattern := "  ✨   .   ✨   .   ✨   .   ✨  ,,.,,,,.  ✨   .   ✨   .   ✨  ,,.,,,,.  ✨   .   ✨   "
+		runes := getScrolledRunes(fireflyPattern, (frame/2)+y*5, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 52, 211, 153, dimLevel)
+		}
+	}
+}
+
+// 6. CURUG CIPENDOK 2D GENERATOR
+func fillCurugCanvas(c [][]CanvasCell, frame, width, height, skyH, horizonH int, dimLevel string) {
+	for y := 0; y < skyH; y++ {
+		cliffPattern := "████\\ |||||||| /█████████\\ |||||||| /█████████\\ |||||||| /█████████\\ |||||||| /████"
+		runes := getScrolledRunes(cliffPattern, (frame/6)+y*6, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 100, 116, 139, dimLevel)
+		}
+	}
+
+	for y := skyH; y < horizonH; y++ {
+		fallCycle := (frame + y) % 3
+		var fallPattern string
+		switch fallCycle {
+		case 0:
+			fallPattern = "  ║ ░ ║ ▒ ║ ░ ║ ▒ ║  ░░▒▒  ║ ░ ║ ▒ ║ ░ ║ ▒ ║  ░░▒▒  ║ ░ ║ ▒ ║ ░ ║ ▒ ║  ░░▒▒  ║ ░ ║ ▒ ║ "
+		case 1:
+			fallPattern = "  ▒ ║ ░ ║ ▒ ║ ░ ║ ▒  ▒▒░░  ▒ ║ ░ ║ ▒ ║ ░ ║ ▒  ▒▒░░  ▒ ║ ░ ║ ▒ ║ ░ ║ ▒  ▒▒░░  ▒ ║ ░ ║ ▒ "
+		default:
+			fallPattern = "  ░ ║ ▒ ║ ░ ║ ▒ ║ ░  ░░▓▓  ░ ║ ▒ ║ ░ ║ ▒ ║ ░  ░░▓▓  ░ ║ ▒ ║ ░ ║ ▒ ║ ░  ░░▓▓  ░ ║ ▒ ║ ░ "
+		}
+		runes := getScrolledRunes(fallPattern, 0, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 56, 189, 248, dimLevel)
+		}
+	}
+
+	for y := horizonH; y < height; y++ {
+		poolPattern := "≈≈≈≈  Percikan Air Dingin Lembah Slamet  ≈≈≈≈ (●) (○) ≈≈≈≈  Curug Cipendok  ≈≈≈≈ (●) (○) "
+		runes := getScrolledRunes(poolPattern, frame+y*4, width)
+		for x := 0; x < width; x++ {
+			c[y][x] = makeCanvasCell(runes[x], 14, 165, 233, dimLevel)
+		}
+	}
+}
+
+// parseANSILine parses one line of ANSI text into visual cells with active ANSI codes
+func parseANSILine(line string, targetWidth int) []VisualCell {
+	cells := make([]VisualCell, targetWidth)
+	for i := range cells {
+		cells[i] = VisualCell{Char: ' '}
+	}
+
+	runes := []rune(line)
+	col := 0
+	currentANSI := ""
+	inEscape := false
+	var escapeBuf []rune
+
+	for i := 0; i < len(runes) && col < targetWidth; i++ {
+		r := runes[i]
+		if r == 0x1b {
+			inEscape = true
+			escapeBuf = []rune{r}
+			continue
+		}
+		if inEscape {
+			escapeBuf = append(escapeBuf, r)
+			if (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') {
+				inEscape = false
+				currentANSI += string(escapeBuf)
+				escapeBuf = nil
+			}
+			continue
+		}
+
+		cells[col] = VisualCell{
+			Char: r,
+			ANSI: currentANSI,
+		}
+		col++
+	}
+
+	return cells
+}
+
+// CompositeCanvas composites foreground Window Manager text over the full-screen 2D background canvas
+func CompositeCanvas(canvas [][]CanvasCell, fgText string, width, height int, dimLevel string, cardBg lipgloss.Color) string {
+	if len(canvas) == 0 || width < 10 || height < 4 {
+		return fgText
+	}
+
+	lines := strings.Split(fgText, "\n")
+	cardBgANSI := hexToBgANSI(cardBg)
+
+	var sb strings.Builder
+
+	for y := 0; y < height; y++ {
+		var fgLine string
+		if y < len(lines) {
+			fgLine = lines[y]
+		}
+
+		vCells := parseANSILine(fgLine, width)
+		var bgRow []CanvasCell
+		if y < len(canvas) {
+			bgRow = canvas[y]
+		}
+
+		inPanel := false
+
+		for x := 0; x < width; x++ {
+			vCell := vCells[x]
+			var bgCell CanvasCell
+			if x < len(bgRow) {
+				bgCell = bgRow[x]
+			} else {
+				bgCell = CanvasCell{Char: ' '}
+			}
+
+			// Toggle panel state on vertical borders
+			if vCell.Char == '│' || vCell.Char == '║' {
+				inPanel = !inPanel
+			}
+
+			if vCell.Char == ' ' {
+				// Empty space: reveal animated background!
+				if inPanel {
+					// Inside panel: render translucent dimmed background character with card background!
+					if bgCell.Char != 0 && bgCell.Char != ' ' {
+						sb.WriteString(bgCell.DimFG + cardBgANSI + string(bgCell.Char) + "\x1b[0m")
+					} else {
+						sb.WriteString(cardBgANSI + " \x1b[0m")
+					}
+				} else {
+					// Outside panel (gutter/margin): render 100% full vibrant color!
+					if bgCell.Char != 0 && bgCell.Char != ' ' {
+						sb.WriteString(bgCell.FG + string(bgCell.Char) + "\x1b[0m")
+					} else {
+						sb.WriteString(" ")
+					}
+				}
+			} else {
+				// Non-space: active foreground text, numbers, meters, borders!
+				if inPanel {
+					sb.WriteString(vCell.ANSI + cardBgANSI + string(vCell.Char) + "\x1b[0m")
+				} else {
+					sb.WriteString(vCell.ANSI + string(vCell.Char) + "\x1b[0m")
+				}
+			}
+		}
+
+		if y < height-1 {
+			sb.WriteString("\n")
+		}
+	}
+
+	return sb.String()
 }
