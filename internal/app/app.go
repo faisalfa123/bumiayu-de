@@ -34,7 +34,7 @@ type TelemetryMsg struct {
 type AutoCleanMsg string
 
 // AppVersion is the current version displayed with BETA flag
-const AppVersion = "v1.0.5"
+const AppVersion = "v1.0.6"
 
 // Model is the main state of Bumiayu TUI Desktop Environment
 type Model struct {
@@ -51,6 +51,9 @@ type Model struct {
 	AnimatedBG string
 	// Background Dim / Opacity Level ("low", "med", "high")
 	BGDimLevel string
+
+	// 3-Row Nusantara Animated Cultural Panorama ("auto", "nusantara", "jawa", "sumatra", "bali", "kalimantan", "sulawesi", "papua", "bumiayu", "bintang", "off")
+	PanoramaTheme string
 
 	// FPS Diagnostics
 	LastTickTime     time.Time
@@ -102,6 +105,7 @@ func InitialModel() Model {
 		AutoCleanMinutes: 0,
 		AnimatedBG:       "auto",
 		BGDimLevel:       "med",
+		PanoramaTheme:    "auto",
 		WebServerPort:    8080,
 		Spotlight:        launcher.NewSpotlightState(),
 		WM: wm.WindowManagerState{
@@ -172,6 +176,12 @@ func (m *Model) applyUserConfig(cfg config.UserConfig) {
 	} else {
 		m.Language = i18n.ID
 	}
+
+	if cfg.PanoramaTheme != "" {
+		m.PanoramaTheme = cfg.PanoramaTheme
+	} else {
+		m.PanoramaTheme = "auto"
+	}
 }
 
 func (m *Model) saveCurrentConfig() {
@@ -214,6 +224,7 @@ func (m *Model) saveCurrentConfig() {
 		AutoCleanMinutes:  m.AutoCleanMinutes,
 		AnimatedBG:        m.AnimatedBG,
 		BGDimLevel:        m.BGDimLevel,
+		PanoramaTheme:     m.PanoramaTheme,
 	}
 	_ = config.SaveConfig(cfg)
 }
@@ -824,6 +835,62 @@ func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.
 		m.StatusMessage = "Opasitas Latar: Tinggi (Sangat Redup / Fokus Teks)"
 		m.saveCurrentConfig()
 
+	// 5. Nusantara Panorama 3-Row Running Animation Configuration
+	case cmd == "panorama_auto":
+		m.PanoramaTheme = "auto"
+		m.StatusMessage = "Panorama: Rotasi Otomatis Tiap 60 Detik Melintasi Nusantara"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_nusantara":
+		m.PanoramaTheme = "nusantara"
+		m.StatusMessage = "Panorama: 🇮🇩 Samudra Nusantara & Kapal Pinisi"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_jawa":
+		m.PanoramaTheme = "jawa"
+		m.StatusMessage = "Panorama: 🏛️ Candi Borobudur & Gunung Slamet (Jawa)"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_sumatra":
+		m.PanoramaTheme = "sumatra"
+		m.StatusMessage = "Panorama: 🐅 Rumah Gadang Minangkabau & Danau Toba (Sumatra)"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_bali":
+		m.PanoramaTheme = "bali"
+		m.StatusMessage = "Panorama: 🛕 Candi Bentar & Pura Ulun Danu Beratan (Bali)"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_kalimantan":
+		m.PanoramaTheme = "kalimantan"
+		m.StatusMessage = "Panorama: 🦅 Burung Enggang Gading & Sungai Mahakam (Kalimantan)"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_sulawesi":
+		m.PanoramaTheme = "sulawesi"
+		m.StatusMessage = "Panorama: ⛵ Rumah Tongkonan Toraja & Perahu Pinisi (Sulawesi)"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_papua":
+		m.PanoramaTheme = "papua"
+		m.StatusMessage = "Panorama: 🌿 Rumah Adat Honai & Burung Cendrawasih (Papua)"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_bumiayu":
+		m.PanoramaTheme = "bumiayu"
+		m.StatusMessage = "Panorama: 🚂 Jembatan Sakalibel & Kereta Api Uap (Bumiayu)"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_bintang":
+		m.PanoramaTheme = "bintang"
+		m.StatusMessage = "Panorama: 🌌 Gugusan Kosmik & Bintang Malam Hening"
+		m.saveCurrentConfig()
+
+	case cmd == "panorama_off":
+		m.PanoramaTheme = "off"
+		m.StatusMessage = "Panorama: Animasi 3-baris bawah dinonaktifkan"
+		m.saveCurrentConfig()
+
 	case strings.HasPrefix(cmd, "jump_"):
 		var idx int
 		fmt.Sscanf(cmd, "jump_%d", &idx)
@@ -927,7 +994,11 @@ func (m Model) View() string {
 	}
 	tickerLine := retro.RenderMarqueeTicker(tickerMsgs, m.AnimFrame, width, st)
 
-	// 4c. Main Workspace: Tiled Layout, Master-Stack, or Zoomed Pane (Uses full height!)
+	// 4c. Main Workspace: Tiled Layout, Master-Stack, or Zoomed Pane
+	workspaceHeight := height
+	if m.PanoramaTheme != "off" {
+		workspaceHeight = height - 3
+	}
 	tiledLayout := wm.RenderTiledLayout(
 		m.WM,
 		m.Hardware,
@@ -938,31 +1009,46 @@ func (m Model) View() string {
 		m.AnimFrame,
 		st,
 		width,
-		height,
+		workspaceHeight,
 	)
 
-	// 4d. Persistent Bottom Quickbar with Shortcuts Help
+	// 4d. 3-Row Running Nusantara Cultural Panorama at Bottom
+	var panoramaLine string
+	if m.PanoramaTheme != "off" {
+		panoramaLine = retro.RenderNusantaraPanorama(
+			retro.PanoramaTheme(m.PanoramaTheme),
+			m.AnimFrame,
+			width,
+			st,
+			time.Now(),
+		)
+	}
+
+	// 4e. Persistent Bottom Quickbar with Shortcuts Help
 	quickBar := help.RenderQuickBar(st, width, m.StatusMessage, m.WM.Zoomed)
 
-	fullContent := lipgloss.JoinVertical(lipgloss.Left,
-		topBar,
-		tickerLine,
-		tiledLayout,
-		quickBar,
-	)
+	var fullContent string
+	if panoramaLine != "" {
+		fullContent = lipgloss.JoinVertical(lipgloss.Left,
+			topBar,
+			tickerLine,
+			tiledLayout,
+			panoramaLine,
+			quickBar,
+		)
+	} else {
+		fullContent = lipgloss.JoinVertical(lipgloss.Left,
+			topBar,
+			tickerLine,
+			tiledLayout,
+			quickBar,
+		)
+	}
 
 	// Clamp to terminal height so no scrolling occurs inside alternate screen buffer
 	lines := strings.Split(fullContent, "\n")
 	if len(lines) > height {
 		lines = lines[:height]
 	}
-	cleanContent := strings.Join(lines, "\n")
-
-	// 5. FULL-SCREEN 2D COMPOSITOR WITH TRANSLUCENT TINT
-	if m.AnimatedBG != "off" {
-		canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
-		return retro.CompositeCanvas(canvas, cleanContent, width, height, m.BGDimLevel, st.CardBg)
-	}
-
-	return cleanContent
+	return strings.Join(lines, "\n")
 }

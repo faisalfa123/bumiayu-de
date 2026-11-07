@@ -24,6 +24,7 @@ type UserConfig struct {
 	AutoCleanMinutes   int    `json:"auto_clean_minutes"`   // 0 (off), 15, 30, 60, 360
 	AnimatedBG         string `json:"animated_bg"`          // "auto", "sawah", "gunung", "sakalibel", "senja", "malam", "curug", "off"
 	BGDimLevel         string `json:"bg_dim_level"`         // "low", "med", "high"
+	PanoramaTheme      string `json:"panorama_theme"`      // "auto", "nusantara", "jawa", "sumatra", "bali", "kalimantan", "sulawesi", "papua", "bumiayu", "bintang", "off"
 }
 
 // GetConfigDir returns path to ~/.config/bumiayu
@@ -109,7 +110,7 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v1.0.5",
+		ConfigVersion:     "v1.0.6",
 		Theme:             "cyber",
 		WMModel:           "tiling",
 		Language:          "id",
@@ -123,5 +124,6 @@ func DefaultConfig() UserConfig {
 		AutoCleanMinutes:  0,
 		AnimatedBG:        "auto",
 		BGDimLevel:        "med",
+		PanoramaTheme:     "auto",
 	}
 }

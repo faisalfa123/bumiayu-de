@@ -110,4 +110,29 @@ func TestExecuteLauncherBackgroundCommands(t *testing.T) {
 			t.Errorf("Expected BGDimLevel to be %s after command %s, got %s", tc.expected, tc.cmd, m.BGDimLevel)
 		}
 	}
+
+	panoTests := []struct {
+		cmd      string
+		expected string
+	}{
+		{"panorama_auto", "auto"},
+		{"panorama_nusantara", "nusantara"},
+		{"panorama_jawa", "jawa"},
+		{"panorama_sumatra", "sumatra"},
+		{"panorama_bali", "bali"},
+		{"panorama_kalimantan", "kalimantan"},
+		{"panorama_sulawesi", "sulawesi"},
+		{"panorama_papua", "papua"},
+		{"panorama_bumiayu", "bumiayu"},
+		{"panorama_bintang", "bintang"},
+		{"panorama_off", "off"},
+	}
+
+	for _, tc := range panoTests {
+		item := launcher.LauncherItem{Command: tc.cmd}
+		_, _ = m.executeLauncherItem(item)
+		if m.PanoramaTheme != tc.expected {
+			t.Errorf("Expected PanoramaTheme to be %s after command %s, got %s", tc.expected, tc.cmd, m.PanoramaTheme)
+		}
+	}
 }

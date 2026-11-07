@@ -65,30 +65,32 @@ Berikut adalah demonstrasi visual antarmuka **Bumiayu TUI** dengan nuansa Window
 * **24 FPS Mulus**: Saat navigasi keyboard, running marquee ticker, animasi equalizer audio retro, dan sprite maskot bergerak di 24 frame per detik (~41ms).
 * **Auto Low-Power Throttling (2 FPS)**: Saat tidak ada interaksi selama 2.5 detik, sistem otomatis memperlambat ke mode standby hemat daya (1–2 FPS). Penggunaan CPU tetap **< 2%** di ODROID-C2 (ARM64) dan sangat hemat kuota SSH!
 
-### 4. 🌄 Desktop Wallpaper & Clean Windows: Animasi Latar Berjalan (24 FPS)
-Mengusung arsitektur **Window Manager Modern (Hyprland / i3-Gaps Style)**:
-* **Jendela Bersih Total (Zero Visual Noise)**: Bagian dalam kotak panel dibuat solid gelap pekat. Tabel proses, CPU bar, dan daftar layanan **100% bersih, tenang, dan tajam** tanpa ada partikel/bintang yang mengotori teks.
-* **Wallpaper Hanya di Sela & Margin Desktop**: Animasi bergerak anggun di sela-sela antar jendela (*gaps*) dan batas luar layar, memberikan nuansa desktop window manager yang hidup namun tetap sangat nyaman di mata.
-* **Preset Minimalis & Alam Tenang**:
-  * **`>bg stars`**: Taburan bintang kosmik hening yang melayang sangat lambat (*Sangat direkomendasikan & sejuk di mata*).
-  * **`>bg matrix`**: Aliran kode digital matrix hijau gelap yang halus dan futuristik.
-  * **`>bg auto`**: Otomatis berganti mengikuti siklus waktu server (Pagi: Slamet, Siang: Sawah, Sore: Senja, Malam: Bintang).
-  * **`>bg sawah`**: Siluet pematang sawah terasering & gubuk saung lembah Slamet.
-  * **`>bg gunung`**: Puncak Gunung Slamet dengan kawah berasap & deretan pinus.
-  * **`>bg sakalibel`**: Kereta Api melintasi jembatan lengkung bersejarah Sakalibel.
-  * **`>bg senja`**: Lentera merah di langit temaram & angkringan teh poci gula batu.
-  * **`>bg malam`**: Langit malam berbintang pekat dengan kilatan meteor periodik.
-  * **`>bg curug`**: Percikan air terjun Curug Cipendok berarus sejuk.
-  * **`>bg off`**: Matikan animasi untuk tampilan hitam polos klasik.
-* **Active Window Elevation**: Jendela yang sedang aktif memiliki bingkai neon menyala tegas beserta badge `AKTIF`, memudahkan navigasi keyboard seketika.
+### 4. 🇮🇩 Running Panorama 3-Baris Nusantara & Bintang di Bawah Layar
+Menghadirkan strip pemandangan bergerak bertingkat 3-baris (langit, siluet arsitektur budaya/alam, dan tanah/samudra) yang berjalan mulus 24 FPS di atas quickbar navigasi:
+* **9 Tema Budaya Nusantara & Kosmik**:
+  * **`>auto`**: Rotasi tema otomatis setiap 60 detik melintasi Nusantara.
+  * **`>nusantara`**: Siluet megah Kapal Layar Pinisi membelah ombak samudra kepulauan.
+  * **`>jawa`**: Stupa Candi Borobudur, Gunungan wayang kulit, & terasering sawah tanah Jawa.
+  * **`>sumatra`**: Atap gonjong bertingkat Rumah Gadang Minangkabau & Danau Toba.
+  * **`>bali`**: Gapura Candi Bentar, Meru Pura Ulun Danu Beratan, & janur penjor.
+  * **`>kalimantan`**: Burung Enggang Gading kanopi rimba & Rumah Betang Sungai Mahakam.
+  * **`>sulawesi`**: Atap perahu Rumah Adat Tongkonan Toraja & Pinisi di laut terumbu karang.
+  * **`>papua`**: Rumah jerami bulat Honai, tarian Cendrawasih, & puncak salju Jayawijaya.
+  * **`>bumiayu`**: Jembatan legendaris Sakalibel dengan lokomotif uap di kaki Gunung Slamet.
+  * **`>bintang`**: Langit malam tenang bertabur rasi bintang kosmik & komet berekor.
+  * **`>panorama off`**: Matikan panorama jika ingin layar lebih ringkas.
 
-### 5. 🔀 3 Model Tata Letak Jendela (Layout Switcher)
+### 5. 🪟 Clean Solid Dashboard & Search Bar Backdrop
+* **Dashboard 100% Bersih & Solid**: Area kerja dan tabel proses bebas dari partikel pengganggu, teks sangat tajam dan tidak ada glitch/duplikasi baris di PowerShell maupun SSH.
+* **Backdrop Animasi Search Bar**: Animasi latar bergerak tampil sebagai backdrop saat Spotlight Search Bar (`Space`) dibuka.
+
+### 6. 🔀 3 Model Tata Letak Jendela (Layout Switcher)
 Ubah tata letak jendela kerja secara instan lewat Spotlight Launcher:
 * **`>layout tiling`** — Grid seimbang 2x2 (4 kuadran kerja simetris).
 * **`>layout master`** — Master-Stack (1 panel telemetri besar di kiri + 3 kartu di kanan).
 * **`>layout split`** — Horizontal Split (Baris telemetri atas + Baris proses bawah).
 
-### 6. 🧹 Auto Clean RAM & Cache Scheduler
+### 7. 🧹 Auto Clean RAM & Cache Scheduler
 Otomatis lepaskan beban RAM yang tertahan di kernel Linux (drop_caches & dentries):
 * **`>autoclean 15m`** — Jadwalkan pembersihan RAM otomatis tiap 15 menit.
 * **`>autoclean 30m`** — Jadwalkan pembersihan RAM otomatis tiap 30 menit.
@@ -96,14 +98,14 @@ Otomatis lepaskan beban RAM yang tertahan di kernel Linux (drop_caches & dentrie
 * **`>clean`** — Pembersihan RAM manual instan sekali tekan.
 * **`>autoclean off`** — Matikan pembersihan otomatis.
 
-### 7. 🎨 Palet Estetika Multi-Theme Retro
+### 8. 🎨 Palet Estetika Multi-Theme Retro
 Ganti tema instan cukup dengan menekan tombol **`T`**:
 * **16-Bit Cyber-Arcade (Default)**: Cyan neon `#00F5FF`, Magenta/Violet `#E024A5`, latar Deep Cyber Navy, dan aksen laser amber.
 * **Classic DOS / Norton Commander**: Nuansa server legendaris 90-an dengan double-box border (`╔═╗`), latar biru pekat, font putih/kuning terang.
 * **8-Bit GameBoy Green**: Palet monokrom 4-tingkat hijau klasik khas handheld retro.
 * **Obsidian Dark & Clean Mac Light**: Tema modern minimalis untuk kebutuhan profesional.
 
-### 8. 🛡️ Senior Safety Guard
+### 9. 🛡️ Senior Safety Guard
 Tindakan berisiko tinggi (menghentikan layanan `ssh.service` atau membunuh proses root kritis) secara otomatis dilindungi dialog konfirmasi bertanda bahaya retro untuk mencegah koneksi remote terputus secara tidak sengaja.
 
 ---
