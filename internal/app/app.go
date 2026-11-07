@@ -34,7 +34,7 @@ type TelemetryMsg struct {
 type AutoCleanMsg string
 
 // AppVersion is the current version displayed with BETA flag
-const AppVersion = "v1.0.4"
+const AppVersion = "v1.0.5"
 
 // Model is the main state of Bumiayu TUI Desktop Environment
 type Model struct {
@@ -762,6 +762,16 @@ func (m *Model) executeLauncherItem(item launcher.LauncherItem) (tea.Model, tea.
 	case cmd == "bg_auto":
 		m.AnimatedBG = "auto"
 		m.StatusMessage = "Background: Animasi Dinamis Sesuai Jam Server (Auto)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_stars":
+		m.AnimatedBG = "stars"
+		m.StatusMessage = "Background: Bintang Kosmik Hening (Minimalis & Tenang)"
+		m.saveCurrentConfig()
+
+	case cmd == "bg_matrix":
+		m.AnimatedBG = "matrix"
+		m.StatusMessage = "Background: Digital Matrix Stream (Hijau Gelap Halus)"
 		m.saveCurrentConfig()
 
 	case cmd == "bg_sawah":

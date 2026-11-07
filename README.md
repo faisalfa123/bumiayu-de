@@ -65,20 +65,22 @@ Berikut adalah demonstrasi visual antarmuka **Bumiayu TUI** dengan nuansa Window
 * **24 FPS Mulus**: Saat navigasi keyboard, running marquee ticker, animasi equalizer audio retro, dan sprite maskot bergerak di 24 frame per detik (~41ms).
 * **Auto Low-Power Throttling (2 FPS)**: Saat tidak ada interaksi selama 2.5 detik, sistem otomatis memperlambat ke mode standby hemat daya (1–2 FPS). Penggunaan CPU tetap **< 2%** di ODROID-C2 (ARM64) dan sangat hemat kuota SSH!
 
-### 4. 🌄 Full-Screen 2D Compositor: Animasi Background Translucent Berjalan 24 FPS
-Background animasi hidup bergerak di seluruh kanvas layar penuh terminal (*full-screen*). Panel jendela kerja memiliki efek opasitas/transparan redup (*dimmed translucent tint*) di balik teks sistem yang kontras dan tajam:
-* **`>bg auto` (Dinamis Waktu Server)**: Otomatis berganti mengikuti siklus waktu server (Pagi: Fajar Slamet, Siang: Sawah Subur, Sore: Lentera Senja, Awal Malam: Sakalibel Ekspres, Larut: Langit Berbintang).
-* **`>bg sawah`**: Petani membajak sawah terasering & kerbau berjalan menyusuri pematang lembah Slamet.
-* **`>bg gunung`**: Siluet megah Gunung Slamet dengan kawah berasap tipis, awan berarak, dan hutan pinus.
-* **`>bg sakalibel`**: Kereta Api Kamandaka melaju di atas jembatan rel lengkung bersejarah Sakalibel Bumiayu.
-* **`>bg senja`**: Lentera merah bergoyang hangat di langit temaram & angkringan teh poci gula batu.
-* **`>bg malam`**: Langit malam berbintang pekat dengan kilatan meteor periodik & kunang-kunang.
-* **`>bg curug`**: Percikan air terjun Curug Cipendok berarus deras menyejukkan server.
-* **`>bg off`**: Matikan panorama latar belakang untuk tampilan minimalis gelap murni.
-* **Pengaturan Keredupan Latar (Dim / Opacity Level)**:
-  * **`>bg dim low`** — Opasitas latar ringan / lebih terang (transparan lebih nyata).
-  * **`>bg dim med`** — Opasitas latar sedang / seimbang (Default estetik).
-  * **`>bg dim high`** — Opasitas latar kuat / sangat redup (Fokus maksimal pada data teks).
+### 4. 🌄 Desktop Wallpaper & Clean Windows: Animasi Latar Berjalan (24 FPS)
+Mengusung arsitektur **Window Manager Modern (Hyprland / i3-Gaps Style)**:
+* **Jendela Bersih Total (Zero Visual Noise)**: Bagian dalam kotak panel dibuat solid gelap pekat. Tabel proses, CPU bar, dan daftar layanan **100% bersih, tenang, dan tajam** tanpa ada partikel/bintang yang mengotori teks.
+* **Wallpaper Hanya di Sela & Margin Desktop**: Animasi bergerak anggun di sela-sela antar jendela (*gaps*) dan batas luar layar, memberikan nuansa desktop window manager yang hidup namun tetap sangat nyaman di mata.
+* **Preset Minimalis & Alam Tenang**:
+  * **`>bg stars`**: Taburan bintang kosmik hening yang melayang sangat lambat (*Sangat direkomendasikan & sejuk di mata*).
+  * **`>bg matrix`**: Aliran kode digital matrix hijau gelap yang halus dan futuristik.
+  * **`>bg auto`**: Otomatis berganti mengikuti siklus waktu server (Pagi: Slamet, Siang: Sawah, Sore: Senja, Malam: Bintang).
+  * **`>bg sawah`**: Siluet pematang sawah terasering & gubuk saung lembah Slamet.
+  * **`>bg gunung`**: Puncak Gunung Slamet dengan kawah berasap & deretan pinus.
+  * **`>bg sakalibel`**: Kereta Api melintasi jembatan lengkung bersejarah Sakalibel.
+  * **`>bg senja`**: Lentera merah di langit temaram & angkringan teh poci gula batu.
+  * **`>bg malam`**: Langit malam berbintang pekat dengan kilatan meteor periodik.
+  * **`>bg curug`**: Percikan air terjun Curug Cipendok berarus sejuk.
+  * **`>bg off`**: Matikan animasi untuk tampilan hitam polos klasik.
+* **Active Window Elevation**: Jendela yang sedang aktif memiliki bingkai neon menyala tegas beserta badge `AKTIF`, memudahkan navigasi keyboard seketika.
 
 ### 5. 🔀 3 Model Tata Letak Jendela (Layout Switcher)
 Ubah tata letak jendela kerja secara instan lewat Spotlight Launcher:

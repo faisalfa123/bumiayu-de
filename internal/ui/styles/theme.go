@@ -236,11 +236,13 @@ func GetTheme(mode ThemeMode) ThemeStyles {
 	ts.Card = lipgloss.NewStyle().
 		Border(cardBorder).
 		BorderForeground(ts.BorderColor).
+		Background(ts.CardBg).
 		Padding(0, 1)
 
 	ts.CardActive = lipgloss.NewStyle().
 		Border(cardBorder).
-		BorderForeground(ts.GlowColor).
+		BorderForeground(ts.PrimaryColor).
+		Background(ts.CardBg).
 		Bold(true).
 		Padding(0, 1)
 

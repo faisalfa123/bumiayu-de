@@ -161,8 +161,20 @@ func RenderTiledLayout(
 
 func getPaneBox(title string, badge string, content string, isFocused bool, st styles.ThemeStyles, width, height int) string {
 	borderStyle := st.Card
+	headerColor := st.MutedColor
+	divColor := st.BorderColor
+	focusBadge := ""
+
 	if isFocused {
 		borderStyle = st.CardActive
+		headerColor = st.PrimaryColor
+		divColor = st.PrimaryColor
+		focusBadge = " " + lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#000000")).
+			Background(st.PrimaryColor).
+			Padding(0, 1).
+			Render("AKTIF")
 	}
 
 	badgeRender := ""
@@ -175,15 +187,10 @@ func getPaneBox(title string, badge string, content string, isFocused bool, st s
 			Render(badge)
 	}
 
-	headerColor := st.TextColor
-	if isFocused {
-		headerColor = st.PrimaryColor
-	}
-
 	header := lipgloss.NewStyle().
 		Bold(true).
 		Foreground(headerColor).
-		Render(title) + badgeRender
+		Render(title) + badgeRender + focusBadge
 
 	divLen := width - 6
 	if divLen < 1 {
@@ -192,7 +199,7 @@ func getPaneBox(title string, badge string, content string, isFocused bool, st s
 
 	inner := lipgloss.JoinVertical(lipgloss.Left,
 		header,
-		lipgloss.NewStyle().Foreground(st.BorderColor).Render(strings.Repeat("─", divLen)),
+		lipgloss.NewStyle().Foreground(divColor).Render(strings.Repeat("─", divLen)),
 		content,
 	)
 

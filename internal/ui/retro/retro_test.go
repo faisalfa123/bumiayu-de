@@ -49,6 +49,8 @@ func TestAnimatedBackground(t *testing.T) {
 
 	presets := []AnimatedBGType{
 		BGAuto,
+		BGStars,
+		BGMatrix,
 		BGSawah,
 		BGGunung,
 		BGSakalibel,

@@ -12,6 +12,8 @@ func TestAppViewModelRenderingWithAnimatedBG(t *testing.T) {
 
 	presets := []string{
 		"auto",
+		"stars",
+		"matrix",
 		"sawah",
 		"gunung",
 		"sakalibel",
@@ -73,6 +75,8 @@ func TestExecuteLauncherBackgroundCommands(t *testing.T) {
 		expected string
 	}{
 		{"bg_auto", "auto"},
+		{"bg_stars", "stars"},
+		{"bg_matrix", "matrix"},
 		{"bg_sawah", "sawah"},
 		{"bg_gunung", "gunung"},
 		{"bg_sakalibel", "sakalibel"},

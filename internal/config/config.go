@@ -109,7 +109,7 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v1.0.4",
+		ConfigVersion:     "v1.0.5",
 		Theme:             "cyber",
 		WMModel:           "tiling",
 		Language:          "id",
