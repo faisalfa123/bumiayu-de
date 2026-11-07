@@ -110,20 +110,20 @@ func SaveConfig(cfg UserConfig) error {
 // DefaultConfig provides clean default setup
 func DefaultConfig() UserConfig {
 	return UserConfig{
-		ConfigVersion:     "v1.0.6",
+		ConfigVersion:     "v1.0.7",
 		Theme:             "cyber",
 		WMModel:           "tiling",
 		Language:          "id",
 		AutoStartSSH:      false,
 		FirstRunCompleted: true,
-		WallpaperType:     "dynamic",
+		WallpaperType:     "preset",
 		WallpaperPreset:   0,
 		WebServerEnabled:  true,
 		WebServerPort:     8080,
 		TargetFPS:         24,
 		AutoCleanMinutes:  0,
-		AnimatedBG:        "auto",
+		AnimatedBG:        "off",
 		BGDimLevel:        "med",
-		PanoramaTheme:     "auto",
+		PanoramaTheme:     "off",
 	}
 }

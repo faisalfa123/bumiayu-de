@@ -81,7 +81,7 @@ func RenderTiledLayout(
 	if contentWidth < 40 {
 		contentWidth = 40
 	}
-	contentHeight := height - 5 // Leave room for topbar, marquee, and footer
+	contentHeight := height - 2 // Leave room for topbar (1) and quickbar footer (1)
 	if contentHeight < 15 {
 		contentHeight = 15
 	}

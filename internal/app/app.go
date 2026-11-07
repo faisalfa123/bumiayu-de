@@ -34,7 +34,7 @@ type TelemetryMsg struct {
 type AutoCleanMsg string
 
 // AppVersion is the current version displayed with BETA flag
-const AppVersion = "v1.0.6"
+const AppVersion = "v1.0.7"
 
 // Model is the main state of Bumiayu TUI Desktop Environment
 type Model struct {
@@ -103,9 +103,9 @@ func InitialModel() Model {
 		FPSCategory:      "24 FPS [AKTIF]",
 		TargetFPSConfig:  24,
 		AutoCleanMinutes: 0,
-		AnimatedBG:       "auto",
+		AnimatedBG:       "off",
 		BGDimLevel:       "med",
-		PanoramaTheme:    "auto",
+		PanoramaTheme:    "off",
 		WebServerPort:    8080,
 		Spotlight:        launcher.NewSpotlightState(),
 		WM: wm.WindowManagerState{
@@ -943,37 +943,22 @@ func (m Model) View() string {
 		promptRender := lipgloss.NewStyle().Bold(true).Foreground(st.DangerColor).Render(m.ConfirmPrompt)
 		hint := lipgloss.NewStyle().Foreground(st.TextColor).Render("Tekan [Y / Enter] untuk Lanjut | [N / Esc] untuk Batal")
 		box := st.Modal.Width(60).Render(lipgloss.JoinVertical(lipgloss.Center, promptRender, "", hint))
-		placed := lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
-		if m.AnimatedBG != "off" {
-			canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
-			return retro.CompositeCanvas(canvas, placed, width, height, m.BGDimLevel, st.CardBg)
-		}
-		return placed
+		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, box)
 	}
 
 	// 2. ARCADE HELP 'HOW TO PLAY' MODAL OVERLAY ('?' key)
 	if m.ShowHelp {
 		modal := help.RenderArcadeHelpModal(st, width, height)
-		placed := lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, modal)
-		if m.AnimatedBG != "off" {
-			canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
-			return retro.CompositeCanvas(canvas, placed, width, height, m.BGDimLevel, st.CardBg)
-		}
-		return placed
+		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, modal)
 	}
 
 	// 3. UNIFIED SPOTLIGHT LAUNCHER MODAL OVERLAY ('Space' or '/' key)
 	if m.Spotlight.Active {
 		spotlightModal := launcher.RenderSpotlight(m.Spotlight, st, width, height)
-		placed := lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, spotlightModal)
-		if m.AnimatedBG != "off" {
-			canvas := retro.Generate2DCanvas(retro.AnimatedBGType(m.AnimatedBG), m.AnimFrame, width, height, m.BGDimLevel)
-			return retro.CompositeCanvas(canvas, placed, width, height, m.BGDimLevel, st.CardBg)
-		}
-		return placed
+		return lipgloss.Place(width, height, lipgloss.Center, lipgloss.Center, spotlightModal)
 	}
 
-	// 4. MAIN WINDOW MANAGER INTERFACE
+	// 4. MAIN WINDOW MANAGER INTERFACE (btop-style Pure Server Mode)
 	// 4a. Topbar: 8-Bit Mascot + Telemetry pills + Live Rolling FPS Diagnostic + BETA Flag & Version
 	autoCleanStatus := ""
 	if m.AutoCleanMinutes > 0 {
@@ -981,24 +966,8 @@ func (m Model) View() string {
 	}
 	topBar := components.RenderTopBar(m.Hardware, m.AnimFrame, st, m.Language, width, m.CurrentFPS, m.FPSCategory, AppVersion, autoCleanStatus)
 
-	// 4b. Running 24 FPS Status Marquee Ticker
-	tickerMsgs := []string{
-		"⚡ BUMIAYU TUI WINDOW MANAGER",
-		fmt.Sprintf("HOST: %s (%s)", m.Hardware.Hostname, m.Hardware.Arch),
-		fmt.Sprintf("TEMA: %s", st.Name),
-		fmt.Sprintf("BG: %s [%s]", retro.BGName(retro.AnimatedBGType(m.AnimatedBG)), strings.ToUpper(m.BGDimLevel)),
-		fmt.Sprintf("FPS: %.0f [%s]", m.CurrentFPS, m.FPSCategory),
-		"TEKAN [SPACE] UNTUK SPOTLIGHT LAUNCHER",
-		"TEKAN [?] UNTUK BANTUAN ARCADE CONTROLS",
-		fmt.Sprintf("CPU LOAD: %.2f | RAM: %d MB", m.Hardware.Load1, m.Hardware.MemUsedMB),
-	}
-	tickerLine := retro.RenderMarqueeTicker(tickerMsgs, m.AnimFrame, width, st)
-
-	// 4c. Main Workspace: Tiled Layout, Master-Stack, or Zoomed Pane
-	workspaceHeight := height
-	if m.PanoramaTheme != "off" {
-		workspaceHeight = height - 3
-	}
+	// 4b. Main Workspace: Tiled Layout (4 quadrants: Hardware, Services, Processes, Network)
+	workspaceHeight := height - 2
 	tiledLayout := wm.RenderTiledLayout(
 		m.WM,
 		m.Hardware,
@@ -1012,38 +981,14 @@ func (m Model) View() string {
 		workspaceHeight,
 	)
 
-	// 4d. 3-Row Running Nusantara Cultural Panorama at Bottom
-	var panoramaLine string
-	if m.PanoramaTheme != "off" {
-		panoramaLine = retro.RenderNusantaraPanorama(
-			retro.PanoramaTheme(m.PanoramaTheme),
-			m.AnimFrame,
-			width,
-			st,
-			time.Now(),
-		)
-	}
-
-	// 4e. Persistent Bottom Quickbar with Shortcuts Help
+	// 4c. Persistent Bottom Quickbar with Shortcuts Help
 	quickBar := help.RenderQuickBar(st, width, m.StatusMessage, m.WM.Zoomed)
 
-	var fullContent string
-	if panoramaLine != "" {
-		fullContent = lipgloss.JoinVertical(lipgloss.Left,
-			topBar,
-			tickerLine,
-			tiledLayout,
-			panoramaLine,
-			quickBar,
-		)
-	} else {
-		fullContent = lipgloss.JoinVertical(lipgloss.Left,
-			topBar,
-			tickerLine,
-			tiledLayout,
-			quickBar,
-		)
-	}
+	fullContent := lipgloss.JoinVertical(lipgloss.Left,
+		topBar,
+		tiledLayout,
+		quickBar,
+	)
 
 	// Clamp to terminal height so no scrolling occurs inside alternate screen buffer
 	lines := strings.Split(fullContent, "\n")
