@@ -1,0 +1,4 @@
+{
+  "name": "bumiayu-de-dev",
+  "postCreateCommand": "git submodule update --init --recursive"
+}
